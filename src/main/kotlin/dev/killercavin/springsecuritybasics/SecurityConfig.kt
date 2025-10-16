@@ -22,7 +22,12 @@ class SecurityConfig {
     fun securityFilterChain(httpSecurity: HttpSecurity): SecurityFilterChain {
         return httpSecurity
             .csrf { it.disable() }
+            // this tells spring to not create or use sessions but reauthenticate on every request
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+
+            // this tells spring to create a session for us and issue a session id, so that we don't have to reauthenticate the users everytime but the session id will
+            // .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) }
+            // .formLogin {}
             .build()
     }
 }
