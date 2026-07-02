@@ -19,22 +19,7 @@ The project is built to demonstrate end-to-end product engineering: system desig
 ---
 
 ## Live Demo
-
-[//]: # (> Backend: [https://gatelog-backend.onrender.com]&#40;https://gatelog-backend.onrender.com&#41;)
-
-[//]: # (> API Docs: [https://gatelog-backend.onrender.com/swagger-ui/index.html]&#40;https://gatelog-backend.onrender.com/swagger-ui/index.html&#41;)
-
-Coming soon...
-
-[//]: # (**Default credentials &#40;demo only — change immediately in any real deployment&#41;:**)
-
-[//]: # (```)
-
-[//]: # (Email:    admin@gatelog.local)
-
-[//]: # (Password: ChangeMe123!)
-
-[//]: # (```)
+- Frontend - [https://gatelog.vercel.app](https://gatelog.vercel.app)
 
 ---
 
@@ -224,6 +209,7 @@ Every push to `main` that touches `backend/**`:
 
 1. **Test** - runs the full test suite with Testcontainers (real Postgres)
 2. **Build image** - multi-stage Docker build, pushed to GHCR with SHA tag and `latest`
+3. **Deploy image** - deploying the build image to render
 
 ```
 ghcr.io/devcavin/gatelog-backend:latest
@@ -241,10 +227,10 @@ ghcr.io/devcavin/gatelog-backend:<short-sha>
 - [x] User registration endpoint with role enforcement
 - [x] CI pipeline with GitHub Actions
 - [x] Visitor registration and check-in/check-out
-- [ ] Real-time dashboard endpoints
+- [x] Real-time dashboard endpoints
 - [x] Visitor search with dynamic filters
 - [x] CSV export
-- [ ] React frontend
+- [ ] React frontend(in progress)
 
 ### Phase 2 - Intelligence Layer _(planned)_
 - [ ] SMS OTP verification (Africa's Talking / Twilio)
@@ -273,7 +259,3 @@ ghcr.io/devcavin/gatelog-backend:<short-sha>
 
 [//]: # ()
 [//]: # (MIT — see [LICENSE]&#40;LICENSE&#41;)
-
----
-
-Built by [@devcavin](https://github.com/devcavin)
