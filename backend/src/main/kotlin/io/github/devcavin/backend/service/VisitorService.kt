@@ -32,7 +32,7 @@ class VisitorService(
         val checkedInStatus = visitStatusRepository.findByName("CHECKED_IN")
             ?: throw ResourceNotFoundException("VisitStatus", "CHECKED_IN")
 
-        val zone = request.zoneId?.let {
+        val zone = request.zoneId.let {
             zoneRepository.findById(it)
                 .orElseThrow { ResourceNotFoundException("Zone", it) }
                 .also { z ->

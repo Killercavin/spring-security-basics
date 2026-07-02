@@ -20,8 +20,8 @@ data class RegisterVisitorRequest(
     val visitorType: String,
 
     val purpose: String = "General visit",
-    val zoneId: UUID? = null,
-    val hostId: UUID? = null
+
+    val zoneId: UUID
 )
 
 data class VisitorResponse(
