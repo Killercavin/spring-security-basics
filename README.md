@@ -19,7 +19,7 @@ The project is built to demonstrate end-to-end product engineering: system desig
 ---
 
 ## Live Demo
-- Frontend - [https://gatelog.vercel.app](https://gatelog.vercel.app)
+- Frontend - [htts://gatelogapp.vercel.app](htts://gatelogapp.vercel.app)
 
 ---
 

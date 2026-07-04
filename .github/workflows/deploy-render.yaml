@@ -2,7 +2,7 @@ name: Deploy to Render
 
 on:
   workflow_run:
-    workflows: ["CI"]
+    workflows: ["Backend CI"]
     types: [completed]
     branches: [main]
 
