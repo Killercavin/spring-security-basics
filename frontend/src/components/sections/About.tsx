@@ -7,7 +7,7 @@ export default function About() {
           About Gatelog
         </p>
         <h2 className="font-display text-3xl lg:text-4xl font-extrabold text-surface tracking-tight leading-tight mb-10">
-          Built with simplicity in mind
+          Built after watching a receptionist manage 30 visitors a day with a paper logbook
         </h2>
 
         <div className="space-y-5 text-body text-base leading-relaxed">
