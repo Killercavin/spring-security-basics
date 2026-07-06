@@ -2,11 +2,11 @@ import { useState, type FormEvent } from 'react'
 import { Send, CheckCircle2 } from 'lucide-react'
 
 interface FormState {
-  name:     string
-  email:    string
-  org:      string
+  name: string
+  email: string
+  org: string
   siteType: string
-  message:  string
+  message: string
 }
 
 const initialForm: FormState = {
@@ -26,10 +26,10 @@ const siteTypes = [
 const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT
 
 export default function Contact() {
-  const [form,      setForm]      = useState<FormState>(initialForm)
+  const [form, setForm] = useState<FormState>(initialForm)
   const [submitted, setSubmitted] = useState(false)
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const set = (field: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -61,13 +61,13 @@ export default function Contact() {
 
       if (response.ok) {
         setSubmitted(true)
-        setLoading(false)
         setForm(initialForm)
       } else {
         const data = await response.json()
         setError(data.error || 'Something went wrong. Please try again.')
       }
-    } catch (_) {
+    } catch (err) {
+      console.error('Form submission error:', err)
       setError('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
@@ -136,7 +136,7 @@ export default function Contact() {
               id="gotcha"
               name="_gotcha"
               value=""
-              onChange={() => {}} // No-op: bots will fill this
+              onChange={() => { }} // No-op: bots will fill this
               tabIndex={-1}
               autoComplete="off"
             />
