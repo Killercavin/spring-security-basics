@@ -9,13 +9,12 @@ import io.github.devcavin.backend.domain.repository.UserRepository
 import io.github.devcavin.backend.security.JwtProperties
 import io.github.devcavin.backend.security.JwtTokenProvider
 import io.github.devcavin.backend.web.dto.auth.AuthResponse
-import io.github.devcavin.backend.web.dto.auth.AuthenticatedUser
 import io.github.devcavin.backend.web.dto.auth.LoginRequest
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 class AuthService(
@@ -43,14 +42,7 @@ class AuthService(
 
         return AuthResponse(
             accessToken = accessToken,
-            refreshToken = refreshToken,
-            user = AuthenticatedUser(
-                id = user.id!!,
-                name = user.name,
-                email = user.email,
-                role = user.role.name,
-                siteId = user.site.id!!
-            )
+            refreshToken = refreshToken
         )
     }
 
@@ -80,14 +72,7 @@ class AuthService(
 
         return AuthResponse(
             accessToken = accessToken,
-            refreshToken = newRefreshToken,
-            user = AuthenticatedUser(
-                id = user.id!!,
-                name = user.name,
-                email = user.email,
-                role = user.role.name,
-                siteId = user.site.id!!
-            )
+            refreshToken = newRefreshToken
         )
     }
 
