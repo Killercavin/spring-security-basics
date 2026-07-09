@@ -1,13 +1,16 @@
+<div align="center" style="justify-content: center; display: flex;">
+
+[![Backend CI](https://github.com/devcavin/gatelog/actions/workflows/backend-ci.yaml/badge.svg)](https://github.com/devcavin/gatelog/actions/workflows/backend-ci.yaml)
+
+[![Deploy to Render](https://github.com/devcavin/gatelog/actions/workflows/deploy-render.yaml/badge.svg)](https://github.com/devcavin/gatelog/actions/workflows/deploy-render.yaml)
+
+[![Frontend CI](https://github.com/devcavin/gatelog/actions/workflows/frontend-ci.yaml/badge.svg)](https://github.com/devcavin/gatelog/actions/workflows/frontend-ci.yaml)
+
+</div>
+
 # Gatelog - Digital Visitor Management System
 
 > A production-grade visitor management system built to replace paper logbooks with a fast, searchable, and accountable web application.
-
-[//]: # (![CI]&#40;https://github.com/devcavin/gatelog/actions/workflows/ci.yml/badge.svg&#41;)
-
-[//]: # (![License]&#40;https://img.shields.io/badge/license-MIT-blue.svg&#41;)
-
-[//]: # (![Status]&#40;https://img.shields.io/badge/status-active%20development-orange&#41;)
-
 ---
 
 ## What is Gatelog?
