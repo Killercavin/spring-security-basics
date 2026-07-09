@@ -238,8 +238,8 @@ ghcr.io/devcavin/gatelog-backend:<short-sha>
 - [ ] Zone routing and host notifications
 - [ ] PDF export
 - [ ] Scheduled report delivery
-- [ ] Kubernetes deployment with Helm
-- [ ] Observability with Prometheus and Grafana
+<!-- - [ ] Kubernetes deployment with Helm
+- [ ] Observability with Prometheus and Grafana -->
 
 ---
 
