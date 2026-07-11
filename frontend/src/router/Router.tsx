@@ -1,87 +1,68 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import { useAuth } from "../auth/AuthContext";
-import ProtectedRoute from "../auth/ProtectedRoute";
+import { createBrowserRouter } from "react-router-dom";
 import Landing from "../pages/Landing";
 import Login from "../pages/auth/Login";
 import Unauthorized from "../pages/auth/Unauthorized";
 import NotFound from "../pages/NotFound";
-import { ROUTE_PATHS, getRoleDestination, routeConfigs } from "./constants";
+import ProtectedRoute from "../auth/ProtectedRoute";
+import { ROUTE_PATHS } from "./constants";
 
-// ── Role-based default redirect after login ────────────────────────────────
-export function RoleRedirect() {
-  const { user } = useAuth();
-  const destination = getRoleDestination(user?.role);
-  return <Navigate to={destination} replace />;
-}
-
-// ── Router ──────────────────────────────────────────────────────────────────
 export const router = createBrowserRouter([
-  // Public routes
-  {
-    path: ROUTE_PATHS.ROOT,
-    element: <Landing />,
-  },
-  {
-    path: ROUTE_PATHS.LOGIN,
-    element: <Login />,
-  },
-  {
-    path: ROUTE_PATHS.UNAUTHORIZED,
-    element: <Unauthorized />,
-  },
+  { path: ROUTE_PATHS.ROOT,         element: <Landing /> },
+  { path: ROUTE_PATHS.LOGIN,        element: <Login /> },
+  { path: ROUTE_PATHS.UNAUTHORIZED, element: <Unauthorized /> },
 
-  // Authenticated — any role
   {
     element: <ProtectedRoute />,
     children: [
       {
         path: ROUTE_PATHS.NEW_VISITOR,
-        lazy: routeConfigs.lazyLoad("../pages/visitors/NewVisitor"),
+        lazy: () => import("../pages/visitors/NewVisitor")
+          .then((m) => ({ Component: m.default })),
       },
       {
         path: ROUTE_PATHS.VISITORS,
-        lazy: routeConfigs.lazyLoad("../pages/visitors/VisitorList"),
+        lazy: () => import("../pages/visitors/VisitorList")
+          .then((m) => ({ Component: m.default })),
       },
     ],
   },
 
-  // Manager + Super Admin
   {
     element: <ProtectedRoute allowedRoles={["MANAGER", "SUPER_ADMIN"]} />,
     children: [
       {
         path: ROUTE_PATHS.DASHBOARD,
-        lazy: routeConfigs.lazyLoad("../pages/Dashboard"),
+        lazy: () => import("../pages/Dashboard")
+          .then((m) => ({ Component: m.default })),
       },
       {
         path: ROUTE_PATHS.REPORTS,
-        lazy: routeConfigs.lazyLoad("../pages/Reports"),
+        lazy: () => import("../pages/Reports")
+          .then((m) => ({ Component: m.default })),
       },
       {
         path: ROUTE_PATHS.USERS,
-        lazy: routeConfigs.lazyLoad("../pages/users/Users"),
+        lazy: () => import("../pages/users/Users")
+          .then((m) => ({ Component: m.default })),
       },
     ],
   },
 
-  // Super Admin only
   {
     element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"]} />,
     children: [
       {
         path: ROUTE_PATHS.ADMIN,
-        lazy: routeConfigs.lazyLoad("../pages/users/Admin"),
+        lazy: () => import("../pages/users/Admin")
+          .then((m) => ({ Component: m.default })),
       },
       {
         path: ROUTE_PATHS.SITES,
-        lazy: routeConfigs.lazyLoad("../pages/sites/Sites"),
+        lazy: () => import("../pages/sites/Sites")
+          .then((m) => ({ Component: m.default })),
       },
     ],
   },
 
-  // Catch-all
-  {
-    path: "*",
-    element: <NotFound />,
-  },
+  { path: "*", element: <NotFound /> },
 ]);

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { getRoleDestination } from "../../router/Router";
+import { getRoleDestination } from "../../router/constants";
 
 export default function Unauthorized() {
   const { user, logout } = useAuth();
