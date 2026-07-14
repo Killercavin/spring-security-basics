@@ -50,7 +50,7 @@ class SecurityConfig(
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val config = CorsConfiguration()
-        config.allowedOrigins = corsProperties.allowedOrigins
+        config.allowedOrigins = listOf(corsProperties.allowedOrigins)
         config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("*")
         config.allowCredentials = true
@@ -62,7 +62,8 @@ class SecurityConfig(
 
     @Configuration
     @ConfigurationProperties(prefix = "gatelog.cors")
+
     class CorsProperties {
-        var allowedOrigins: List<String>? = listOf("http://localhost:5173")
+        lateinit var allowedOrigins: String
     }
 }
