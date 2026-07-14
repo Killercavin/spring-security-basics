@@ -113,7 +113,7 @@ return (
     <div className="flex items-center justify-center p-8 bg-white max-[860px]:p-5 max-[860px:items-start max-[860px]:pt-16">
       <div className="w-full max-w-[400px]">
         {/* Mobile logo */}
-        <a href="/" className="font-display text-xl font-extrabold text-white tracking-[-0.03em] no-underline flex-shrink-0 hidden max-[860px]:block mb-10">
+        <a href="/" className="font-display text-xl font-extrabold text-black tracking-[-0.03em] no-underline flex-shrink-0 hidden max-[860px]:block mb-10">
           Gate<span className="text-green-500">log</span>
         </a>
 
