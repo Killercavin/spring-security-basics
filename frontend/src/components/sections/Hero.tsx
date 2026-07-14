@@ -42,7 +42,7 @@ export default function Hero() {
           <ul className="flex flex-col gap-2 mb-9">
             {[
               'Real-time dashboard that reveals exactly who is on premises',
-              'Returning visitor auto-fill — check-in under 30 seconds',
+              'Returning visitor auto-fill & check-in under 30 seconds',
             ].map((item, i) => (
               <li key={i} className="flex items-start gap-2.5 text-sm text-body">
                 <CheckCircle2
