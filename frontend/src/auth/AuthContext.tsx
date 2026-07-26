@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { user: null, isAuthenticated: false, isLoading: true };
   });
 
-  // ── Bootstrap — restore session from stored token ──────────────────────
+  // Bootstrap — restore session from stored token
   useEffect(() => {
     const accessToken = tokenStorage.getAccess();
     const refreshToken = tokenStorage.getRefresh();
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
   }, []);
 
-  // ── Listen for session expiry from axios interceptor ──────────────────
+  // Listen for session expiry from axios interceptor
   useEffect(() => {
     const onExpired = () => {
       setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("gatelog:session-expired", onExpired);
   }, []);
 
-  // ── Login ──────────────────────────────────────────────────────────────
+  // Login
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await authApi.login({ email, password });
     tokenStorage.set(data.accessToken, data.refreshToken);
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // ── Logout ─────────────────────────────────────────────────────────────
+  // Logout
   const logout = useCallback(async () => {
     const refreshToken = tokenStorage.getRefresh();
     try {
@@ -126,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── Role helper ────────────────────────────────────────────────────────
+  // Role helper
   const isRole = useCallback(
     (...roles: Role[]) => {
       return state.user ? roles.includes(state.user.role) : false;
