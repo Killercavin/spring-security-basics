@@ -6,7 +6,7 @@ plugins {
     kotlin("plugin.jpa") version "2.1.21"
 }
 
-group = "io.github.devcavin"
+group = "io.github.devcavin.gatelog"
 version = "0.0.1-SNAPSHOT"
 description = "backend"
 
