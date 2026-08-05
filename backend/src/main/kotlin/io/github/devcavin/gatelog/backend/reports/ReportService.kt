@@ -1,5 +1,6 @@
 package io.github.devcavin.gatelog.backend.reports
 
+import io.github.devcavin.gatelog.backend.auth.AuthorizationService
 import io.github.devcavin.gatelog.backend.users.User
 import io.github.devcavin.gatelog.backend.visitors.Visitor
 import io.github.devcavin.gatelog.backend.visitors.VisitorRepository
@@ -15,61 +16,63 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class ReportService(
-    private val visitorRepository: VisitorRepository
+    private val visitorRepository: VisitorRepository,
+    private val authorizationService: AuthorizationService
 ) {
-    private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC)
+
+    private val formatter = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd HH:mm:ss")
+        .withZone(ZoneOffset.UTC)
 
     @Transactional(readOnly = true)
     fun exportVisitorsCsv(
         requestedBy: User,
-        searchParams: VisitorSearchParams
+        params: VisitorSearchParams
     ): ByteArray {
-        val spec = VisitorSpecification.search(
-            siteId = requestedBy.site.id!!,
-            params = searchParams
-        )
-
+        val scope = authorizationService.scopeFor(requestedBy)
+        val spec = VisitorSpecification.search(scope, params)
         val visitors = visitorRepository.findAll(spec)
-
         return buildCsv(visitors)
     }
 
     private fun buildCsv(visitors: List<Visitor>): ByteArray {
-        val output = ByteArrayOutputStream()
-        val writer = PrintWriter(output)
+        val out = ByteArrayOutputStream()
+        val writer = PrintWriter(out)
 
         writer.println(
-            csvRow (
+            csvRow(
                 "ID", "Name", "Phone", "Visitor Type",
                 "Purpose", "Status", "Zone", "Host",
-                "Registered By", "Check In", "Check Out", "Duration (minutes)"
-                )
+                "Registered By", "Site",
+                "Check In", "Check Out", "Duration (minutes)"
+            )
         )
 
-        visitors.forEach { visitor ->
-            val durationInMinutes = visitor.checkOutTime?.let {
-                Duration.between(visitor.checkInTime, it).toMinutes().toString()
+        visitors.forEach { v ->
+            val duration = v.checkOutTime?.let {
+                Duration.between(v.checkInTime, it).toMinutes().toString()
             } ?: ""
 
             writer.println(
                 csvRow(
-                    visitor.id.toString(),
-                    visitor.name,
-                    visitor.phone,
-                    visitor.visitorType,
-                    visitor.purpose,
-                    visitor.visitStatus.name,
-                    visitor.zone?.name ?: "",
-                    visitor.createdBy.name,
-                    formatter.format(visitor.checkInTime),
-                    visitor.checkOutTime?.let { formatter.format(it) } ?: "",
-                    durationInMinutes
+                    v.id.toString(),
+                    v.name,
+                    v.phone,
+                    v.visitorType,
+                    v.purpose,
+                    v.visitStatus.name,
+                    v.zone?.name ?: "",
+                    v.createdBy.name,
+                    v.site.name,
+                    formatter.format(v.checkInTime),
+                    v.checkOutTime?.let { formatter.format(it) } ?: "",
+                    duration
                 )
             )
         }
 
         writer.flush()
-        return output.toByteArray()
+        return out.toByteArray()
     }
 
     private fun csvRow(vararg fields: String): String =

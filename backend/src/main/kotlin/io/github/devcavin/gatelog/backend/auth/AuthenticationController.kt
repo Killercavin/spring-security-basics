@@ -12,22 +12,22 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/auth")
-class AuthController(private val authService: AuthService) {
+class AuthenticationController(private val authenticationService: AuthenticationService) {
     @PostMapping("/login")
     fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<AuthResponse> {
-        val response = authService.login(request)
+        val response = authenticationService.login(request)
         return ResponseEntity.ok(response)
     }
 
     @PostMapping("/refresh")
     fun refresh(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<AuthResponse> {
-        val response = authService.refresh(request.token)
+        val response = authenticationService.refresh(request.refreshToken)
         return ResponseEntity.ok(response)
     }
 
     @PostMapping("/logout")
     fun logout(@Valid @RequestBody request: RefreshTokenRequest): ResponseEntity<Void> {
-        authService.logout(request.token)
+        authenticationService.logout(request.refreshToken)
         return ResponseEntity.noContent().build()
     }
 }

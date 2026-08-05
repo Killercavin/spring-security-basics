@@ -6,22 +6,22 @@ import org.springframework.security.authentication.BadCredentialsException
 sealed class DomainException(message: String) : RuntimeException(message)
 
 // 401 — bad credentials or invalid/expired tokens
-sealed class UnauthorizedException(message: String): io.github.devcavin.gatelog.backend.common.exception.DomainException(message)
+sealed class UnauthorizedException(message: String): DomainException(message)
 
 class InvalidCredentialsException : BadCredentialsException("Invalid username or password")
 
 class InvalidRefreshTokenException : BadCredentialsException("Invalid or expired refresh token")
 
 // 403 - authenticated but !permitted
-class AccountDisabledException : io.github.devcavin.gatelog.backend.common.exception.DomainException("Account is disabled")
+class AccountDisabledException : DomainException("Account is disabled")
 
 // 404 - resource !found
-class ResourceNotFoundException(resource: String, id: Any) : io.github.devcavin.gatelog.backend.common.exception.DomainException("Resource $resource not found: $id")
+class ResourceNotFoundException(resource: String, id: Any) : DomainException("Resource $resource not found: $id")
 
 // 409 - conflicts with existing state/resources, etc...
-class ConflictException(message: String) : io.github.devcavin.gatelog.backend.common.exception.DomainException(message)
+class ConflictException(message: String) : DomainException(message)
 
 // 422 - semantically invalid request (e.g. checking out already checked out visitor)
-class InvalidStateException(message: String) : io.github.devcavin.gatelog.backend.common.exception.DomainException(message)
+class InvalidStateException(message: String) : DomainException(message)
 
 class AccessDeniedException(message: String) : RuntimeException(message)
