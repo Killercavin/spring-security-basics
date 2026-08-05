@@ -21,7 +21,7 @@ class JwtTokenProvider(private val jwtProperties: JwtProperties) {
 
         return Jwts.builder()
             .subject(userId.toString())
-            .claim("claim", email)
+            .claim("email", email)
             .claim("role", role)
             .issuedAt(now)
             .expiration(expiry)

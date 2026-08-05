@@ -13,7 +13,7 @@ import java.time.OffsetDateTime
 import java.util.*
 
 @Service
-class AuthService(
+class AuthenticationService(
     private val userRepository: UserRepository,
     private val refreshTokenRepository: RefreshTokenRepository,
     private val passwordEncoder: PasswordEncoder,

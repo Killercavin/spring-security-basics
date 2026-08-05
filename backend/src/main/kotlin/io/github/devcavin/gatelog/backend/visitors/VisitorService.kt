@@ -1,16 +1,11 @@
 package io.github.devcavin.gatelog.backend.visitors
 
+import io.github.devcavin.gatelog.backend.auth.AuthorizationService
 import io.github.devcavin.gatelog.backend.common.exception.ConflictException
 import io.github.devcavin.gatelog.backend.common.exception.InvalidStateException
 import io.github.devcavin.gatelog.backend.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.backend.users.User
-import io.github.devcavin.gatelog.backend.visitors.dto.RegisterVisitorRequest
-import io.github.devcavin.gatelog.backend.visitors.dto.ReturningVisitorResponse
-import io.github.devcavin.gatelog.backend.visitors.dto.UpdateVisitorProfileRequest
-import io.github.devcavin.gatelog.backend.visitors.dto.VisitorProfileResponse
-import io.github.devcavin.gatelog.backend.visitors.dto.VisitorResponse
-import io.github.devcavin.gatelog.backend.visitors.dto.VisitorSearchParams
-import io.github.devcavin.gatelog.backend.visitors.dto.toResponse
+import io.github.devcavin.gatelog.backend.visitors.dto.*
 import io.github.devcavin.gatelog.backend.zones.ZoneRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -23,31 +18,31 @@ import java.util.*
 @Service
 class VisitorService(
     private val visitorRepository: VisitorRepository,
-    private val visitorProfileRepository: VisitorProfileRepository,
     private val visitStatusRepository: VisitStatusRepository,
-    private val zoneRepository: ZoneRepository
+    private val zoneRepository: ZoneRepository,
+    private val visitorProfileRepository: VisitorProfileRepository,
+    private val authorizationService: AuthorizationService
 ) {
 
     @Transactional
-    fun register(
-        requestedBy: User,
-        request: RegisterVisitorRequest
-    ): VisitorResponse {
+    fun register(requestedBy: User, request: RegisterVisitorRequest): VisitorResponse {
         val checkedInStatus = visitStatusRepository.findByName("CHECKED_IN")
             ?: throw ResourceNotFoundException("VisitStatus", "CHECKED_IN")
+
+        // registration always scoped to the registering user's own site
+        val registrationSiteId = requestedBy.site.id!!
 
         val zone = request.zoneId.let {
             zoneRepository.findById(it)
                 .orElseThrow { ResourceNotFoundException("Zone", it) }
                 .also { z ->
-                    if (z.site.id != requestedBy.site.id)
+                    if (z.site.id != registrationSiteId)
                         throw AccessDeniedException("Zone does not belong to your site")
                 }
         }
 
-        // find or create visitor profile by phone + site
         val profile = visitorProfileRepository
-            .findBySiteIdAndPhoneNumber(requestedBy.site.id!!, request.phone)
+            .findBySiteIdAndPhoneNumber(registrationSiteId, request.phone)
             ?: visitorProfileRepository.save(
                 VisitorProfile(
                     name = request.name,
@@ -75,8 +70,7 @@ class VisitorService(
     fun getById(requestedBy: User, visitorId: UUID): VisitorResponse {
         val visitor = visitorRepository.findById(visitorId)
             .orElseThrow { ResourceNotFoundException("Visitor", visitorId) }
-
-        enforcesSiteBoundary(requestedBy, visitor.site.id!!)
+        authorizationService.assertCanAccessVisitor(requestedBy, visitor)
         return visitor.toResponse()
     }
 
@@ -85,11 +79,12 @@ class VisitorService(
         val visitor = visitorRepository.findById(visitorId)
             .orElseThrow { ResourceNotFoundException("Visitor", visitorId) }
 
-        enforcesSiteBoundary(requestedBy, visitor.site.id!!)
+        authorizationService.assertCanAccessVisitor(requestedBy, visitor)
 
         if (visitor.visitStatus.name != "CHECKED_IN") {
             throw InvalidStateException(
-                "Visitor is already ${visitor.visitStatus.name.lowercase().replace('_', ' ')}"
+                "Visitor is already ${visitor.visitStatus.name
+                    .lowercase().replace('_', ' ')}"
             )
         }
 
@@ -98,7 +93,6 @@ class VisitorService(
 
         visitor.visitStatus = checkedOutStatus
         visitor.checkOutTime = OffsetDateTime.now()
-
         return visitorRepository.save(visitor).toResponse()
     }
 
@@ -108,24 +102,26 @@ class VisitorService(
         params: VisitorSearchParams,
         pageable: Pageable
     ): Page<VisitorResponse> {
-        val spec = VisitorSpecification.search(requestedBy.site.id!!, params)
+        val scope = authorizationService.scopeFor(requestedBy)
+        val spec = VisitorSpecification.search(scope, params)
         return visitorRepository.findAll(spec, pageable).map { it.toResponse() }
     }
-
 
     @Transactional(readOnly = true)
     fun findReturningVisitor(
         requestedBy: User,
         phone: String
     ): ReturningVisitorResponse? {
+        // returning visitor lookup is always site-scoped
+        // even SUPER_ADMIN registers visitors at their own site
+        val siteId = requestedBy.site.id!!
+
         val profile = visitorProfileRepository
-            .findBySiteIdAndPhoneNumber(requestedBy.site.id!!, phone)
+            .findBySiteIdAndPhoneNumber(siteId, phone)
             ?: return null
 
         val lastVisit = visitorRepository
-            .findTopBySiteIdAndPhoneOrderByCheckInTimeDesc(
-                requestedBy.site.id!!, phone
-            )
+            .findTopBySiteIdAndPhoneOrderByCheckInTimeDesc(siteId, phone)
 
         return ReturningVisitorResponse(
             name = profile.name,
@@ -134,14 +130,6 @@ class VisitorService(
             zoneId = lastVisit?.zone?.id,
             zoneName = lastVisit?.zone?.name
         )
-    }
-
-    private fun enforcesSiteBoundary(requestedBy: User, visitorSiteId: UUID) {
-        if (requestedBy.role.name != "SUPER_ADMIN" &&
-            requestedBy.site.id != visitorSiteId
-        ) {
-            throw AccessDeniedException("Visitor does not belong to your site")
-        }
     }
 
     @Transactional
@@ -153,6 +141,7 @@ class VisitorService(
         val profile = visitorProfileRepository.findById(profileId)
             .orElseThrow { ResourceNotFoundException("VisitorProfile", profileId) }
 
+        // profile updates always scoped to the user's own site
         if (profile.site.id != requestedBy.site.id) {
             throw AccessDeniedException("Profile does not belong to your site")
         }
@@ -163,7 +152,7 @@ class VisitorService(
             )
         ) {
             throw ConflictException(
-                "Phone number is already registered at this site"
+                "Phone '${request.phoneNumber}' already registered at this site"
             )
         }
 
@@ -182,4 +171,20 @@ class VisitorService(
             visitCount = visitCount.toInt()
         )
     }
+
+    private fun Visitor.toResponse() = VisitorResponse(
+        id = id!!,
+        name = name,
+        phone = phone,
+        visitorType = visitorType,
+        purpose = purpose,
+        status = visitStatus.name,
+        siteId = site.id!!,
+        zoneId = zone?.id,
+        zoneName = zone?.name,
+        createdById = createdBy.id!!,
+        createdByName = createdBy.name,
+        checkInTime = checkInTime,
+        checkOutTime = checkOutTime
+    )
 }

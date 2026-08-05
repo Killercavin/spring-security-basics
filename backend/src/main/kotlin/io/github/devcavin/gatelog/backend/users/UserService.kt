@@ -1,5 +1,7 @@
 package io.github.devcavin.gatelog.backend.users
 
+import io.github.devcavin.gatelog.backend.auth.AccessScope
+import io.github.devcavin.gatelog.backend.auth.AuthorizationService
 import io.github.devcavin.gatelog.backend.common.exception.ConflictException
 import io.github.devcavin.gatelog.backend.common.exception.InvalidCredentialsException
 import io.github.devcavin.gatelog.backend.common.exception.InvalidStateException
@@ -21,6 +23,7 @@ class UserService(
     private val userRepository: UserRepository,
     private val roleRepository: RoleRepository,
     private val siteRepository: SiteRepository,
+    private val authorizationService: AuthorizationService,
     private val passwordEncoder: PasswordEncoder
 ) {
     @Transactional
@@ -29,7 +32,7 @@ class UserService(
 
         val targetRole = roleRepository.findByName(request.roleName) ?: throw ResourceNotFoundException("Role", request.roleName)
 
-        enforceCreationRules(requestedBy, targetRole.name, request.siteId)
+        authorizationService.assertCanCreateUser(requestedBy, targetRole.name, request.siteId)
 
         val site = siteRepository.findById(request.siteId).orElseThrow { ResourceNotFoundException("Site", request.siteId) }
 
@@ -47,25 +50,32 @@ class UserService(
 
     @Transactional(readOnly = true)
     fun getAll(requestedBy: User): List<UserResponse> {
-
-        return when (requestedBy.role.name) {
-            "SUPER_ADMIN" -> userRepository.findAllWithRole().map { it.toResponse() }
-            "MANAGER" -> userRepository
-                .findAllBySiteIdWithRole(requestedBy.site.id!!)
+        return when (val scope = authorizationService.scopeFor(requestedBy)) {
+            is AccessScope.Global -> userRepository
+                .findAllWithRole()
+                .map { it.toResponse() }
+            is AccessScope.Site -> userRepository
+                .findAllBySiteIdWithRole(scope.siteId)
                 .filter { it.role.name == "STAFF" }
                 .map { it.toResponse() }
-            else -> emptyList()
         }
     }
 
     @Transactional(readOnly = true)
     fun getById(requestedBy: User, userId: UUID): UserResponse {
-        val user = userRepository.findByIdWithRole(userId)
+        val target = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("User", userId) }
+        when (val scope = authorizationService.scopeFor(requestedBy)) {
+            is AccessScope.Global -> Unit // SUPER_ADMIN sees any user
+            is AccessScope.Site -> {
+                if (target.site.id != scope.siteId)
+                    throw ResourceNotFoundException("User", userId)
+                if (target.role.name != "STAFF")
+                    throw AccessDeniedException("Managers can only view Staff accounts")
+            }
+        }
 
-        enforceVisibilityRules(requestedBy, user)
-
-        return user.toResponse()
+        return target.toResponse()
     }
 
     @Transactional
@@ -77,8 +87,8 @@ class UserService(
         val target = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("User", userId) }
 
-        enforceVisibilityRules(requestedBy, target)
-        enforceUpdateRules(requestedBy, target, request.roleName)
+        authorizationService.assertCanViewUser(requestedBy, target)
+        authorizationService.assertCanUpdateUser(requestedBy, target, request.roleName)
 
         if (request.email != target.email &&
             userRepository.existsByEmail(request.email)
@@ -104,8 +114,8 @@ class UserService(
         val target = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("User", userId) }
 
-        enforceVisibilityRules(requestedBy, target)
-        enforceDeactivationRules(requestedBy, target)
+        authorizationService.assertCanViewUser(requestedBy, target)
+        authorizationService.assertCanDeactivateUser(requestedBy, target)
 
         target.isActive = false
         return userRepository.save(target).toResponse()
@@ -115,7 +125,7 @@ class UserService(
     fun activate(requestedBy: User, userId: UUID): UserResponse {
         val target = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("User", userId) }
-        enforceVisibilityRules(requestedBy, target)
+        authorizationService.assertCanViewUser(requestedBy, target)
         target.isActive = true
         return userRepository.save(target).toResponse()
     }
@@ -133,60 +143,5 @@ class UserService(
         }
         requestedBy.passwordHash = passwordEncoder.encode(request.newPassword)
         return userRepository.save(requestedBy).toResponse()
-    }
-
-    private fun enforceCreationRules(
-        requestedBy: User,
-        targetRoleName: String,
-        targetSiteId: UUID
-    ) {
-        when (requestedBy.role.name) {
-            "SUPER_ADMIN" -> Unit
-            "MANAGER" -> {
-                if (targetRoleName != "STAFF") throw AccessDeniedException("Managers can only create STAFF accounts")
-                if (targetSiteId != requestedBy.site.id) throw AccessDeniedException("Managers can only create users at their own site")
-            }
-            else -> throw AccessDeniedException("Insufficient privileges to create users")
-        }
-    }
-
-    private fun enforceDeactivationRules(requestedBy: User, target: User) {
-        when (requestedBy.role.name) {
-            "SUPER_ADMIN" -> Unit
-            "MANAGER" -> {
-                if (target.role.name != "STAFF")
-                    throw AccessDeniedException("Managers can only deactivate Staff accounts")
-            }
-            else -> throw AccessDeniedException("Insufficient privilege to deactivate users")
-        }
-    }
-
-    private fun enforceUpdateRules(
-        requestedBy: User,
-        target: User,
-        newRoleName: String
-    ) {
-        when (requestedBy.role.name) {
-            "SUPER_ADMIN" -> Unit
-            "MANAGER" -> {
-                if (target.role.name != "STAFF")
-                    throw AccessDeniedException("Managers can only update Staff accounts")
-                if (newRoleName != "STAFF")
-                    throw AccessDeniedException("Managers cannot change role beyond Staff")
-            }
-            else -> throw AccessDeniedException("Insufficient privilege to update users")
-        }
-    }
-
-    private fun enforceVisibilityRules(requestedBy: User, target: User) {
-        if (requestedBy.role.name == "SUPER_ADMIN") return
-
-        if (requestedBy.site.id != target.site.id) {
-            throw AccessDeniedException("User doesnt belong to your site")
-        }
-
-        if (requestedBy.role.name == "MANAGER" && target.role.name != "STAFF") {
-            throw AccessDeniedException("Managers can only view staff accounts")
-        }
     }
 }

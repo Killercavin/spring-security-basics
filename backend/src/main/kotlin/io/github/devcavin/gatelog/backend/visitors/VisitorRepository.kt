@@ -41,7 +41,7 @@ interface VisitorRepository : JpaRepository<Visitor, UUID>, JpaSpecificationExec
         pageable: Pageable
     ): Page<Visitor>
 
-    // overdue visitors — checked in but no checkout past threshold
+    // overdue visitors - checked in but no checkout past threshold
     @Query(
         """
         SELECT v FROM Visitor v
@@ -72,7 +72,7 @@ interface VisitorRepository : JpaRepository<Visitor, UUID>, JpaSpecificationExec
         overdueStatus: VisitStatus
     ): Int
 
-    // count by status — dashboard stats
+    // count by status - dashboard stats
     fun countBySiteIdAndVisitStatus(
         siteId: UUID,
         visitStatus: VisitStatus
@@ -80,5 +80,46 @@ interface VisitorRepository : JpaRepository<Visitor, UUID>, JpaSpecificationExec
 
     fun countBySiteIdAndVisitorProfileId(siteId: UUID, profileId: UUID): Long
 
-    // fun findAll(specification: Specification<VisitorSpecification>, pageable: Pageable): Page<Visitor>
+    @Query("""
+    SELECT v FROM Visitor v
+    WHERE v.visitStatus = :visitStatus
+    """)
+    fun findAllByVisitStatus(
+        visitStatus: VisitStatus,
+        pageable: Pageable
+    ): Page<Visitor>
+
+    @Query("""
+    SELECT v FROM Visitor v
+    WHERE v.visitStatus.name = 'CHECKED_IN'
+    AND v.checkInTime <= :threshold
+    """)
+    fun findAllOverdueGlobal(
+        threshold: OffsetDateTime
+    ): List<Visitor>
+
+    @Query("""
+    SELECT COUNT(v) FROM Visitor v
+    WHERE v.checkInTime >= :startOfDay
+    AND v.checkInTime < :endOfDay
+    """)
+    fun countCheckedInTodayGlobal(
+        startOfDay: OffsetDateTime,
+        endOfDay: OffsetDateTime
+    ): Long
+
+    fun countByVisitStatus(visitStatus: VisitStatus): Long
+
+    fun countBySiteIdAndVisitStatusAndCheckOutTimeBetween(
+        siteId: UUID,
+        visitStatus: VisitStatus,
+        start: OffsetDateTime,
+        end: OffsetDateTime
+    ): Long
+
+    fun countByVisitStatusAndCheckOutTimeBetween(
+        visitStatus: VisitStatus,
+        start: OffsetDateTime,
+        end: OffsetDateTime
+    ): Long
 }

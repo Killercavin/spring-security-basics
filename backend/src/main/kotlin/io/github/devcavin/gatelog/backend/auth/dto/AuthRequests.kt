@@ -14,5 +14,5 @@ data class LoginRequest(
 
 data class RefreshTokenRequest(
     @field:NotBlank
-    val token: String
+    val refreshToken: String
 )
