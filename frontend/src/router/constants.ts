@@ -24,3 +24,16 @@ export function getRoleDestination(role: Role | undefined): string {
     ? ROLE_DESTINATION_MAP[role]
     : ROUTE_PATHS.LOGIN;
 }
+
+export function isPathAllowedForRole(path: string, role: Role): boolean {
+  const staffPaths    = [ROUTE_PATHS.VISITORS, ROUTE_PATHS.NEW_VISITOR]
+  const managerPaths  = [...staffPaths, ROUTE_PATHS.DASHBOARD, ROUTE_PATHS.REPORTS, ROUTE_PATHS.USERS]
+  const adminPaths    = [...managerPaths, ROUTE_PATHS.ADMIN, ROUTE_PATHS.SITES]
+
+  switch (role) {
+    case 'STAFF':       return staffPaths.some(p => path.startsWith(p))
+    case 'MANAGER':     return managerPaths.some(p => path.startsWith(p))
+    case 'SUPER_ADMIN': return adminPaths.some(p => path.startsWith(p))
+    default:            return false
+  }
+}

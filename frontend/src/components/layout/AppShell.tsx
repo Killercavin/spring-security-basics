@@ -1,9 +1,7 @@
-// src/components/layout/AppShell.tsx
 import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { ROUTE_PATHS } from '../../router/constants'
-import { AppLoader } from '../AppLoader'
 import {
   LayoutDashboard,
   UserPlus,
@@ -69,22 +67,21 @@ const ROLE_LABELS: Record<string, string> = {
   STAFF: 'Staff',
 }
 
-function getInitials(email: string): string {
-  // Add defensive check even here
-  if (!email) return '??'
-  const parts = email.split('@')[0].split(/[._-]/)
+function getInitials(email: string | undefined | null): string {
+  if (!email) return "?"
+  const parts = email.split("@")[0].split(/[._-]/)
   return parts
     .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? '')
-    .join('')
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("")
 }
 
 export default function AppShell() {
-  const { user, logout, isRole, isLoading } = useAuth()
+  const { user, logout, isRole } = useAuth()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
-  // Close drawer on Escape key
+  // close drawer on escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setDrawerOpen(false)
@@ -98,25 +95,12 @@ export default function AppShell() {
     navigate(ROUTE_PATHS.LOGIN, { replace: true })
   }
 
-  // Check BOTH isLoading AND user
-  // The problem: isLoading can be false while user is still null
-  if (isLoading || !user) {
-    // If we're still loading or no user, show loader or redirect
-    if (!user && !isLoading) {
-      // Not loading but no user = not authenticated
-      navigate(ROUTE_PATHS.LOGIN, { replace: true })
-      return null
-    }
-    return <AppLoader />
-  }
-
-  // Safe to use user object now
   const visibleLinks = NAV_ITEMS.filter((item) =>
     item.roles.some((r) => isRole(r))
   )
 
-  const initials = getInitials(user.email)
-  const roleLabel = ROLE_LABELS[user.role] ?? user.role
+  const initials = getInitials(user?.email)
+  const roleLabel = user ? (ROLE_LABELS[user.role] ?? user.role) : ""
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -214,7 +198,7 @@ export default function AppShell() {
             {/* User info */}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-gray-900 truncate">
-                {user.email}
+                {user?.email}
               </p>
               <p className="text-xs text-gray-400">{roleLabel}</p>
             </div>
@@ -254,7 +238,7 @@ export default function AppShell() {
           </div>
         </header>
 
-        {/* Page content — Outlet renders the active route */}
+        {/* Page content - Outlet renders the active route */}
         <main className="flex-1 p-6 md:p-8">
           <Outlet />
         </main>

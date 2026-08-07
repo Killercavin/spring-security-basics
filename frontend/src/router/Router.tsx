@@ -9,8 +9,8 @@ import { ROUTE_PATHS } from './constants'
 
 export const router = createBrowserRouter([
   // Public
-  { path: ROUTE_PATHS.ROOT,         element: <Landing /> },
-  { path: ROUTE_PATHS.LOGIN,        element: <Login /> },
+  { path: ROUTE_PATHS.ROOT, element: <Landing /> },
+  { path: ROUTE_PATHS.LOGIN, element: <Login /> },
   { path: ROUTE_PATHS.UNAUTHORIZED, element: <Unauthorized /> },
 
   // Authenticated: shell wraps all protected routes
@@ -20,7 +20,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          // Any role
+          // any authenticated role
           {
             path: ROUTE_PATHS.NEW_VISITOR,
             lazy: () => import('../pages/visitors/NewVisitor')
@@ -32,33 +32,43 @@ export const router = createBrowserRouter([
               .then((m) => ({ Component: m.default })),
           },
 
-          // Manager + Super Admin
+          // manager + super admin only
           {
-            path: ROUTE_PATHS.DASHBOARD,
-            lazy: () => import('../pages/Dashboard')
-              .then((m) => ({ Component: m.default })),
-          },
-          {
-            path: ROUTE_PATHS.REPORTS,
-            lazy: () => import('../pages/Reports')
-              .then((m) => ({ Component: m.default })),
-          },
-          {
-            path: ROUTE_PATHS.USERS,
-            lazy: () => import('../pages/users/Users')
-              .then((m) => ({ Component: m.default })),
+            element: <ProtectedRoute allowedRoles={['MANAGER', 'SUPER_ADMIN']} />,
+            children: [
+              {
+                path: ROUTE_PATHS.DASHBOARD,
+                lazy: () => import('../pages/Dashboard')
+                  .then((m) => ({ Component: m.default })),
+              },
+              {
+                path: ROUTE_PATHS.REPORTS,
+                lazy: () => import('../pages/Reports')
+                  .then((m) => ({ Component: m.default })),
+              },
+              {
+                path: ROUTE_PATHS.USERS,
+                lazy: () => import('../pages/users/Users')
+                  .then((m) => ({ Component: m.default })),
+              },
+            ],
           },
 
-          // Super Admin only
+          // super admin only
           {
-            path: ROUTE_PATHS.ADMIN,
-            lazy: () => import('../pages/users/Admin')
-              .then((m) => ({ Component: m.default })),
-          },
-          {
-            path: ROUTE_PATHS.SITES,
-            lazy: () => import('../pages/sites/Sites')
-              .then((m) => ({ Component: m.default })),
+            element: <ProtectedRoute allowedRoles={['SUPER_ADMIN']} />,
+            children: [
+              {
+                path: ROUTE_PATHS.ADMIN,
+                lazy: () => import('../pages/users/Admin')
+                  .then((m) => ({ Component: m.default })),
+              },
+              {
+                path: ROUTE_PATHS.SITES,
+                lazy: () => import('../pages/sites/Sites')
+                  .then((m) => ({ Component: m.default })),
+              },
+            ],
           },
         ],
       },

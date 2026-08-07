@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { getRoleDestination } from "../../router/constants";
+import { getRoleDestination, isPathAllowedForRole } from "../../router/constants";
 import { extractErrorMessage } from "../../utils/errors";
 
 interface LocationState {
@@ -22,13 +22,19 @@ export default function Login() {
 
   // redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
-      const state = location.state as LocationState;
-      const destination =
-        state?.from?.pathname ?? getRoleDestination(user.role);
-      navigate(destination, { replace: true });
-    }
-  }, [isAuthenticated, user, navigate, location.state]);
+  if (isAuthenticated && user) {
+    const state = location.state as LocationState
+    const roleDest = getRoleDestination(user.role)
+    const fromPath = state?.from?.pathname
+
+    // only honour the stored path if it is appropriate for this role
+    const destination = fromPath && isPathAllowedForRole(fromPath, user.role)
+      ? fromPath
+      : roleDest
+
+    navigate(destination, { replace: true })
+  }
+}, [isAuthenticated, user, navigate, location.state])
 
   // focus email on mount
   useEffect(() => {

@@ -15,7 +15,7 @@ export function parseJwt(token: string): JwtPayload {
 export function isTokenExpired(token: string): boolean {
   try {
     const { exp } = parseJwt(token);
-    // treat as expired 30 seconds early to avoid edge cases
+    // treating token as expired 30 seconds early to avoid edge cases
     return Date.now() / 1000 >= exp - 30;
   } catch {
     return true;
