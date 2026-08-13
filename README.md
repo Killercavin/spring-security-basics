@@ -78,6 +78,26 @@ The project is built to demonstrate end-to-end product engineering: system desig
 └─────────────────────────────────────────┘
 ```
 
+```
+                        GATELOG
+
+                    Authentication
+                           │
+                           ▼
+                    Authorization
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+      Users            Visitors             Sites
+                           │                  │
+                           ▼                  ▼
+                         Zones            Dashboard
+                           │                  │
+                           └──────────┬───────┘
+                                      ▼
+                                   Reports
+```
+
 ---
 
 ## Data Model
