@@ -9,7 +9,7 @@ export const apiClient = axios.create({
   timeout: 15_000,
 });
 
-// ── Request interceptor — inject access token ──────────────────────────────
+// Request interceptor - inject access token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenStorage.getAccess();
@@ -21,7 +21,7 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ── Response interceptor — silent token refresh on 401 ────────────────────
+// Response interceptor - silent token refresh on 401
 let isRefreshing = false;
 let refreshQueue: Array<{
   resolve: (token: string) => void;
