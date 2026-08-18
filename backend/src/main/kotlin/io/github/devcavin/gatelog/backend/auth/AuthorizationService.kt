@@ -2,6 +2,7 @@ package io.github.devcavin.gatelog.backend.auth
 
 import io.github.devcavin.gatelog.backend.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.backend.common.exception.AccessDeniedException
+import io.github.devcavin.gatelog.backend.sites.Site
 import io.github.devcavin.gatelog.backend.users.User
 import io.github.devcavin.gatelog.backend.visitors.Visitor
 import org.springframework.security.authorization.AuthorizationDeniedException
@@ -18,7 +19,8 @@ class AuthorizationService {
     fun scopeFor(user: User): AccessScope {
         return when (user.role.name) {
             "SUPER_ADMIN" -> AccessScope.Global
-            else -> AccessScope.Site(user.site.id!!)
+            "MANAGER", "STAFF" -> AccessScope.Site(user.site.id!!)
+            else -> throw AccessDeniedException("Unsupported user role")
         }
     }
 
@@ -28,12 +30,8 @@ class AuthorizationService {
      */
 
     fun assertCovers(user: User, siteId: UUID) {
-        val scope = scopeFor(user)
-
-        if (!scope.covers(siteId)) {
-            throw AuthorizationDeniedException(
-                "Authorization denied for user"
-            )
+        if (!scopeFor(user).covers(siteId)) {
+            throw AccessDeniedException("Authorization denied")
         }
     }
 
@@ -44,12 +42,9 @@ class AuthorizationService {
      */
 
     fun assertCanAccessVisitor(user: User, visitor: Visitor) {
-        val scope = scopeFor(user)
-
-        if (!scope.covers(visitor.site.id!!)) throw ResourceNotFoundException(
-            "Visitor",
-            visitor.id!!
-        )
+        if (!scopeFor(user).covers(requireSiteId(visitor.site))) {
+            throw ResourceNotFoundException("Visitor", requireNotNull(visitor.id))
+        }
     }
 
     /**
@@ -59,6 +54,8 @@ class AuthorizationService {
      */
 
     fun siteFilterFor(user: User): UUID? = scopeFor(user).siteIdOrNull
+
+    fun canAccessSite(user: User, siteId: UUID): Boolean = scopeFor(user).covers(siteId)
 
     /**
      * Enforces who can create a user with the given role at the given site.
@@ -80,7 +77,7 @@ class AuthorizationService {
                     throw AccessDeniedException("Insufficient privileges to create users")
 
                 if (targetRoleName != "STAFF")
-                    throw AccessDeniedException("Managers can only create Staff accounts")
+                    throw AccessDeniedException("Managers can only create staff accounts")
 
                 if (targetSiteId != scope.siteId)
                     throw AccessDeniedException("Managers can only create users at their own site")
@@ -107,10 +104,10 @@ class AuthorizationService {
                     throw AccessDeniedException("User does not belong to your site")
 
                 if (target.role.name != "STAFF")
-                    throw AccessDeniedException("Managers can only update Staff accounts")
+                    throw AccessDeniedException("Managers can only update staff accounts")
 
                 if (newRoleName != "STAFF")
-                    throw AccessDeniedException("Managers cannot change role beyond Staff")
+                    throw AccessDeniedException("Managers cannot change role beyond staff")
             }
         }
     }
@@ -129,8 +126,9 @@ class AuthorizationService {
             is AccessScope.Site -> {
                 if (target.site.id != scope.siteId)
                     throw AccessDeniedException("User does not belong to your site")
+
                 if (target.role.name != "STAFF")
-                    throw AccessDeniedException("Managers can only deactivate Staff accounts")
+                    throw AccessDeniedException("Managers can only deactivate staff accounts")
             }
         }
     }
@@ -147,11 +145,19 @@ class AuthorizationService {
 
             is AccessScope.Site -> {
                 if (target.site.id != scope.siteId)
-                    throw ResourceNotFoundException("User", target.id!!)
+                    throw ResourceNotFoundException("User", requireNotNull(target.id))
+
                 if (target.role.name != "STAFF")
-                    throw AccessDeniedException("Managers can only view Staff accounts")
+                    throw AccessDeniedException("Managers can only view staff accounts")
             }
         }
     }
 
+    private fun requireSiteId(user: User) : UUID {
+        return user.site.id ?: throw AccessDeniedException("User is not associated with a site")
+    }
+
+    private fun requireSiteId(site: Site) : UUID {
+        return site.id ?: throw AccessDeniedException("Resource is not associated with a site")
+    }
 }

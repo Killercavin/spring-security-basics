@@ -7,14 +7,9 @@ import io.github.devcavin.gatelog.backend.common.exception.InvalidCredentialsExc
 import io.github.devcavin.gatelog.backend.common.exception.InvalidStateException
 import io.github.devcavin.gatelog.backend.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.backend.sites.SiteRepository
+import io.github.devcavin.gatelog.backend.users.dto.*
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import io.github.devcavin.gatelog.backend.common.exception.AccessDeniedException
-import io.github.devcavin.gatelog.backend.users.dto.ChangePasswordRequest
-import io.github.devcavin.gatelog.backend.users.dto.CreateUserRequest
-import io.github.devcavin.gatelog.backend.users.dto.UpdateUserRequest
-import io.github.devcavin.gatelog.backend.users.dto.UserResponse
-import io.github.devcavin.gatelog.backend.users.dto.toResponse
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
 
@@ -54,6 +49,7 @@ class UserService(
             is AccessScope.Global -> userRepository
                 .findAllWithRole()
                 .map { it.toResponse() }
+
             is AccessScope.Site -> userRepository
                 .findAllBySiteIdWithRole(scope.siteId)
                 .filter { it.role.name == "STAFF" }
@@ -65,15 +61,8 @@ class UserService(
     fun getById(requestedBy: User, userId: UUID): UserResponse {
         val target = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("User", userId) }
-        when (val scope = authorizationService.scopeFor(requestedBy)) {
-            is AccessScope.Global -> Unit // SUPER_ADMIN sees any user
-            is AccessScope.Site -> {
-                if (target.site.id != scope.siteId)
-                    throw ResourceNotFoundException("User", userId)
-                if (target.role.name != "STAFF")
-                    throw AccessDeniedException("Managers can only view Staff accounts")
-            }
-        }
+
+        authorizationService.assertCanViewUser(requestedBy, target)
 
         return target.toResponse()
     }
@@ -90,9 +79,7 @@ class UserService(
         authorizationService.assertCanViewUser(requestedBy, target)
         authorizationService.assertCanUpdateUser(requestedBy, target, request.roleName)
 
-        if (request.email != target.email &&
-            userRepository.existsByEmail(request.email)
-        ) {
+        if (request.email != target.email && userRepository.existsByEmail(request.email)) {
             throw ConflictException("Email already in use: ${request.email}")
         }
 
@@ -115,6 +102,7 @@ class UserService(
             .orElseThrow { ResourceNotFoundException("User", userId) }
 
         authorizationService.assertCanViewUser(requestedBy, target)
+
         authorizationService.assertCanDeactivateUser(requestedBy, target)
 
         target.isActive = false
@@ -125,7 +113,9 @@ class UserService(
     fun activate(requestedBy: User, userId: UUID): UserResponse {
         val target = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("User", userId) }
+
         authorizationService.assertCanViewUser(requestedBy, target)
+
         target.isActive = true
         return userRepository.save(target).toResponse()
     }
@@ -135,12 +125,10 @@ class UserService(
         requestedBy: User,
         request: ChangePasswordRequest
     ): UserResponse {
-        if (!passwordEncoder.matches(
-                request.currentPassword, requestedBy.passwordHash
-            )
-        ) {
+        if (!passwordEncoder.matches(request.currentPassword, requestedBy.passwordHash)) {
             throw InvalidCredentialsException()
         }
+
         requestedBy.passwordHash = passwordEncoder.encode(request.newPassword)
         return userRepository.save(requestedBy).toResponse()
     }

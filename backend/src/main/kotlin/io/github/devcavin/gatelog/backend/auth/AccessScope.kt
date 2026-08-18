@@ -32,6 +32,4 @@ sealed class AccessScope {
         is Global -> null
         is Site -> this.siteId
     }
-
-    val isGlobal: Boolean get() = this is Global
 }
