@@ -23,13 +23,14 @@ class JwtAuthenticationFilter(
         val token = extractToken(request)
 
         if (token != null && jwtTokenProvider.validateToken(token)) {
+
             val userId = jwtTokenProvider.getUserIdFromToken(token)
-            val role = jwtTokenProvider.getRoleFromToken(token)
 
             val user = userRepository.findByIdWithRoleAndSite(userId)
 
             if (user != null && user.isActive) {
-                val authorities = listOf(SimpleGrantedAuthority("ROLE_$role"))
+                val authorities = listOf(SimpleGrantedAuthority("ROLE_${user.role.name}"))
+
                 val authentication = UsernamePasswordAuthenticationToken(user, null, authorities)
 
                 SecurityContextHolder.getContext().authentication = authentication
