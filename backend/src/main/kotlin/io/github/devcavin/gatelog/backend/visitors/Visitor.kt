@@ -1,5 +1,6 @@
 package io.github.devcavin.gatelog.backend.visitors
 
+import io.github.devcavin.gatelog.backend.common.exception.InvalidStateException
 import io.github.devcavin.gatelog.backend.common.persistence.BaseEntity
 import io.github.devcavin.gatelog.backend.sites.Site
 import io.github.devcavin.gatelog.backend.zones.Zone
@@ -62,4 +63,15 @@ class Visitor(
 
     @Column(name = "check_out_time")
     var checkOutTime: OffsetDateTime? = null
-) : BaseEntity()
+) : BaseEntity() {
+    fun checkOut(now: OffsetDateTime = OffsetDateTime.now()) {
+        if (visitStatus != VisitStatus.CHECKED_IN) {
+            throw InvalidStateException(
+                "Visitor is not currently checked in"
+            )
+        }
+
+        visitStatus = VisitStatus.CHECKED_OUT
+        checkOutTime = now
+    }
+}

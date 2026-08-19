@@ -1,18 +1,21 @@
 package io.github.devcavin.gatelog.backend.sites
 
+import io.github.devcavin.gatelog.backend.auth.AuthorizationService
 import io.github.devcavin.gatelog.backend.common.exception.ConflictException
 import io.github.devcavin.gatelog.backend.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.backend.sites.dto.SiteRequest
 import io.github.devcavin.gatelog.backend.sites.dto.SiteResponse
 import io.github.devcavin.gatelog.backend.sites.dto.toEntity
 import io.github.devcavin.gatelog.backend.sites.dto.toResponse
+import io.github.devcavin.gatelog.backend.users.User
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 @Service
 class SiteService(
-    private val siteRepository: SiteRepository
+    private val siteRepository: SiteRepository,
+    private val authorizationService: AuthorizationService
 ) {
     @Transactional
     fun create(request: SiteRequest): SiteResponse {
@@ -29,7 +32,11 @@ class SiteService(
     fun getAll(): List<SiteResponse> = siteRepository.findAll().map { it.toResponse() }
 
     @Transactional(readOnly = true)
-    fun getById(id: UUID): SiteResponse {
+    fun getById(requestBy: User, id: UUID): SiteResponse {
+
+        // site access scope check
+        authorizationService.assertCovers(requestBy, id)
+
         val site = siteRepository.findById(id)
             .orElseThrow { ResourceNotFoundException("Site", id) }
         return site.toResponse()

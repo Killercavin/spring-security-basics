@@ -20,10 +20,12 @@ import java.util.UUID
 @Entity
 @Table(
     name = "visitor_profiles",
-    uniqueConstraints = [UniqueConstraint(
-        name = "uq_visitor_profiles_phone_site",
-        columnNames = ["phone_number", "site_id"]
-    )]
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uk_visitor_profile_site_phone",
+            columnNames = ["site_id", "phone_number"]
+        )
+    ]
 )
 class VisitorProfile(
     @Id

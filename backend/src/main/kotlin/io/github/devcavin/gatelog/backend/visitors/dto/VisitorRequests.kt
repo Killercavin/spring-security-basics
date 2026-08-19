@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size
 import java.time.OffsetDateTime
 import java.util.UUID
 
-data class RegisterVisitorRequest(
+data class VisitorRegistrationRequest(
     @field:NotBlank
     @field:Size(max = 100)
     val name: String,
