@@ -2,10 +2,12 @@ package io.github.devcavin.gatelog.backend.sites
 
 import io.github.devcavin.gatelog.backend.sites.dto.SiteRequest
 import io.github.devcavin.gatelog.backend.sites.dto.SiteResponse
+import io.github.devcavin.gatelog.backend.users.User
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import java.util.*
 
@@ -30,9 +32,10 @@ class SiteController(
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
     fun getById(
+        @AuthenticationPrincipal requestedBy: User,
         @PathVariable id: UUID
     ): ResponseEntity<SiteResponse> =
-        ResponseEntity.ok(siteService.getById(id))
+        ResponseEntity.ok(siteService.getById(requestedBy, id))
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")

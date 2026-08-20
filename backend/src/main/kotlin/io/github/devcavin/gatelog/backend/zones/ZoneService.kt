@@ -1,8 +1,10 @@
 package io.github.devcavin.gatelog.backend.zones
 
+import io.github.devcavin.gatelog.backend.auth.AuthorizationService
 import io.github.devcavin.gatelog.backend.common.exception.ConflictException
 import io.github.devcavin.gatelog.backend.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.backend.sites.SiteRepository
+import io.github.devcavin.gatelog.backend.users.User
 import io.github.devcavin.gatelog.backend.zones.dto.ZoneRequest
 import io.github.devcavin.gatelog.backend.zones.dto.ZoneResponse
 import io.github.devcavin.gatelog.backend.zones.dto.toResponse
@@ -13,10 +15,17 @@ import java.util.UUID
 @Service
 class ZoneService(
     private val zoneRepository: ZoneRepository,
-    private val siteRepository: SiteRepository
+    private val siteRepository: SiteRepository,
+    private val authorizationService: AuthorizationService
 ) {
     @Transactional
-    fun create(siteId: UUID, request: ZoneRequest): ZoneResponse {
+    fun create(
+        requestedBy: User,
+        siteId: UUID,
+        request: ZoneRequest
+    ): ZoneResponse {
+        authorizationService.assertCovers(requestedBy, siteId)
+
         val site = siteRepository.findById(siteId)
             .orElseThrow { ResourceNotFoundException("Site", siteId) }
 
@@ -33,7 +42,12 @@ class ZoneService(
     }
 
     @Transactional(readOnly = true)
-    fun getAllBySite(siteId: UUID): List<ZoneResponse> {
+    fun getAllBySite(
+        requestedBy: User,
+        siteId: UUID
+    ): List<ZoneResponse> {
+        authorizationService.assertCovers(requestedBy, siteId)
+
         if (!siteRepository.existsById(siteId)) {
             throw ResourceNotFoundException("Site", siteId)
         }
@@ -42,7 +56,14 @@ class ZoneService(
     }
 
     @Transactional
-    fun update(siteId: UUID, zoneId: UUID, request: ZoneRequest): ZoneResponse {
+    fun update(
+        requestedBy: User,
+        siteId: UUID,
+        zoneId: UUID,
+        request: ZoneRequest
+    ): ZoneResponse {
+        authorizationService.assertCovers(requestedBy, siteId)
+
         val zone = zoneRepository.findById(zoneId).orElseThrow { ResourceNotFoundException("Zone", zoneId) }
 
         if (zone.site.id != siteId) throw ResourceNotFoundException("Zone", zoneId)
@@ -56,7 +77,12 @@ class ZoneService(
     }
 
     @Transactional
-    fun delete(zoneId: UUID, siteId: UUID) {
+    fun delete(
+        requestedBy: User,
+        siteId: UUID,
+        zoneId: UUID) {
+        authorizationService.assertCovers(requestedBy, siteId)
+
         val zone = zoneRepository.findById(zoneId)
             .orElseThrow { ResourceNotFoundException("Zone", zoneId) }
 

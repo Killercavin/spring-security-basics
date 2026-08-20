@@ -20,10 +20,12 @@ import java.util.UUID
 @Entity
 @Table(
     name = "visitor_profiles",
-    uniqueConstraints = [UniqueConstraint(
-        name = "uq_visitor_profiles_phone_site",
-        columnNames = ["phone_number", "site_id"]
-    )]
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uq_visitor_profiles_phone_site",
+            columnNames = ["phone_number", "site_id"]
+        )
+    ]
 )
 class VisitorProfile(
     @Id
@@ -31,13 +33,13 @@ class VisitorProfile(
     @Column(updatable = false, nullable = false)
     override var id: UUID? = null,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     var name: String,
 
     @Column(nullable = false, name = "phone_number", length = 25)
     var phoneNumber: String,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "site_id", nullable = false)
     var site: Site,
 

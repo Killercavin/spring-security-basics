@@ -21,7 +21,7 @@ class DashboardService(
     private val visitorRepository: VisitorRepository,
     private val visitorStatusRepository: VisitStatusRepository,
     private val authorizationService: AuthorizationService,
-    @Value("\${gatelog.scheduler.overdue-threshold-hours:2}")
+    @Value($$"${gatelog.scheduler.overdue-threshold-hours:2}")
     private val overdueThresholdHours: Long,
 ) {
     @Transactional(readOnly = true)

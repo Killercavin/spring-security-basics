@@ -11,29 +11,46 @@ import java.time.OffsetDateTime
 import java.util.*
 
 @Repository
-interface VisitorRepository : JpaRepository<Visitor, UUID>, JpaSpecificationExecutor<Visitor> {
-    // returning visitor lookup by phone within a site
-    fun findTopBySiteIdAndPhoneOrderByCheckInTimeDesc(
-        siteId: UUID,
-        phone: String
+interface VisitorRepository :
+    JpaRepository<Visitor, UUID>,
+    JpaSpecificationExecutor<Visitor> {
+
+    fun findTopByVisitorProfileIdOrderByCheckInTimeDesc(
+        visitorProfileId: UUID
     ): Visitor?
 
-    // active visitors on the dashboard
-    fun findAllBySiteIdAndVisitStatus(
+    fun countBySiteIdAndVisitorProfileId(
         siteId: UUID,
-        visitStatus: VisitStatus,
-        pageable: Pageable
-    ): Page<Visitor>
+        profileId: UUID
+    ): Long
 
-    // visitors checked in today for daily count
-    @Query(
-        """
+    @Modifying
+    @Query("""
+        UPDATE Visitor v
+        SET v.visitStatus = :overdueStatus
+        WHERE v.site.id = :siteId
+        AND v.visitStatus.name = 'CHECKED_IN'
+        AND v.checkInTime <= :threshold
+    """)
+    fun markOverdue(
+        siteId: UUID,
+        threshold: OffsetDateTime,
+        overdueStatus: VisitStatus
+    ): Int
+
+    fun countBySiteIdAndVisitStatus(
+        siteId: UUID,
+        visitStatus: VisitStatus
+    ): Long
+
+    fun countByVisitStatus(visitStatus: VisitStatus): Long
+
+    @Query("""
         SELECT v FROM Visitor v
         WHERE v.site.id = :siteId
         AND v.checkInTime >= :startOfDay
         AND v.checkInTime < :endOfDay
-        """
-    )
+    """)
     fun findAllCheckedInToday(
         siteId: UUID,
         startOfDay: OffsetDateTime,
@@ -41,44 +58,45 @@ interface VisitorRepository : JpaRepository<Visitor, UUID>, JpaSpecificationExec
         pageable: Pageable
     ): Page<Visitor>
 
-    // overdue visitors - checked in but no checkout past threshold
-    @Query(
-        """
+    @Query("""
+    SELECT COUNT(v) FROM Visitor v
+    WHERE v.checkInTime >= :startOfDay
+    AND v.checkInTime < :endOfDay
+    """)
+    fun countCheckedInTodayGlobal(
+        startOfDay: OffsetDateTime,
+        endOfDay: OffsetDateTime
+    ): Long
+
+    fun countBySiteIdAndVisitStatusAndCheckOutTimeBetween(
+        siteId: UUID,
+        visitStatus: VisitStatus,
+        start: OffsetDateTime,
+        end: OffsetDateTime
+    ): Long
+
+    fun countByVisitStatusAndCheckOutTimeBetween(
+        visitStatus: VisitStatus,
+        start: OffsetDateTime,
+        end: OffsetDateTime
+    ): Long
+
+    fun findAllBySiteIdAndVisitStatus(
+        siteId: UUID,
+        visitStatus: VisitStatus,
+        pageable: Pageable
+    ): Page<Visitor>
+
+    @Query("""
         SELECT v FROM Visitor v
         WHERE v.site.id = :siteId
         AND v.visitStatus.name = 'CHECKED_IN'
         AND v.checkInTime <= :threshold
-        """
-    )
+        """)
     fun findAllOverdue(
         siteId: UUID,
         threshold: OffsetDateTime
     ): List<Visitor>
-
-    // bulk status update for overdue job
-    @Modifying
-    @Query(
-        """
-        UPDATE Visitor v
-        SET v.visitStatus = :overdueStatus
-        WHERE v.site.id = :siteId
-        AND v.visitStatus.name = 'CHECKED_IN'
-        AND v.checkInTime <= :threshold
-        """
-    )
-    fun markOverdue(
-        siteId: UUID,
-        threshold: OffsetDateTime,
-        overdueStatus: VisitStatus
-    ): Int
-
-    // count by status - dashboard stats
-    fun countBySiteIdAndVisitStatus(
-        siteId: UUID,
-        visitStatus: VisitStatus
-    ): Long
-
-    fun countBySiteIdAndVisitorProfileId(siteId: UUID, profileId: UUID): Long
 
     @Query("""
     SELECT v FROM Visitor v
@@ -97,29 +115,4 @@ interface VisitorRepository : JpaRepository<Visitor, UUID>, JpaSpecificationExec
     fun findAllOverdueGlobal(
         threshold: OffsetDateTime
     ): List<Visitor>
-
-    @Query("""
-    SELECT COUNT(v) FROM Visitor v
-    WHERE v.checkInTime >= :startOfDay
-    AND v.checkInTime < :endOfDay
-    """)
-    fun countCheckedInTodayGlobal(
-        startOfDay: OffsetDateTime,
-        endOfDay: OffsetDateTime
-    ): Long
-
-    fun countByVisitStatus(visitStatus: VisitStatus): Long
-
-    fun countBySiteIdAndVisitStatusAndCheckOutTimeBetween(
-        siteId: UUID,
-        visitStatus: VisitStatus,
-        start: OffsetDateTime,
-        end: OffsetDateTime
-    ): Long
-
-    fun countByVisitStatusAndCheckOutTimeBetween(
-        visitStatus: VisitStatus,
-        start: OffsetDateTime,
-        end: OffsetDateTime
-    ): Long
 }
