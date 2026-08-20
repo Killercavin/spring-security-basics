@@ -3,7 +3,7 @@ package io.github.devcavin.gatelog.backend.visitors.dto
 import io.github.devcavin.gatelog.backend.visitors.Visitor
 import io.github.devcavin.gatelog.backend.visitors.VisitorProfile
 import java.time.OffsetDateTime
-import java.util.*
+import java.util.UUID
 
 data class VisitorProfileSummary(
     val id: UUID,
@@ -50,31 +50,48 @@ data class VisitSummary(
     val checkOutTime: OffsetDateTime?
 )
 
-fun Visitor.toResponse() = VisitorResponse(
-    id = requireNotNull(id),
-    profile = VisitorProfileSummary(
-        id = requireNotNull(visitorProfile!!.id),
-        name = visitorProfile!!.name,
-        phoneNumber = visitorProfile!!.phoneNumber
-    ),
-    visitorType = visitorType,
-    purpose = purpose,
-    status = visitStatus.name,
-    siteId = requireNotNull(site.id),
-    zoneId = zone?.id,
-    zoneName = zone?.name,
-    createdById = requireNotNull(createdBy.id),
-    createdByName = createdBy.name,
-    checkInTime = checkInTime,
-    checkOutTime = checkOutTime
-)
+fun Visitor.toResponse(): VisitorResponse {
+    val profile = visitorProfile
+
+    return VisitorResponse(
+        id = requireNotNull(id),
+        profile = VisitorProfileSummary(
+            id = requireNotNull(profile.id),
+            name = profile.name,
+            phoneNumber = profile.phoneNumber
+        ),
+        visitorType = visitorType,
+        purpose = purpose,
+        status = visitStatus.name,
+        siteId = requireNotNull(site.id),
+        zoneId = zone?.id,
+        zoneName = zone?.name,
+        createdById = requireNotNull(createdBy.id),
+        createdByName = createdBy.name,
+        checkInTime = checkInTime,
+        checkOutTime = checkOutTime
+    )
+}
 
 fun VisitorProfile.toResponse(
     visitCount: Long
-) = VisitorProfileResponse(
-    id = requireNotNull(id),
-    name = name,
-    phoneNumber = phoneNumber,
-    siteId = requireNotNull(site.id),
-    visitCount = visitCount
-)
+): VisitorProfileResponse =
+    VisitorProfileResponse(
+        id = requireNotNull(id),
+        name = name,
+        phoneNumber = phoneNumber,
+        siteId = requireNotNull(site.id),
+        visitCount = visitCount
+    )
+
+fun Visitor.toVisitSummary(): VisitSummary =
+    VisitSummary(
+        id = requireNotNull(id),
+        visitorType = visitorType,
+        purpose = purpose,
+        status = visitStatus.name,
+        zoneId = zone?.id,
+        zoneName = zone?.name,
+        checkInTime = checkInTime,
+        checkOutTime = checkOutTime
+    )

@@ -22,8 +22,8 @@ import java.util.UUID
     name = "visitor_profiles",
     uniqueConstraints = [
         UniqueConstraint(
-            name = "uk_visitor_profile_site_phone",
-            columnNames = ["site_id", "phone_number"]
+            name = "uq_visitor_profiles_phone_site",
+            columnNames = ["phone_number", "site_id"]
         )
     ]
 )
@@ -33,13 +33,13 @@ class VisitorProfile(
     @Column(updatable = false, nullable = false)
     override var id: UUID? = null,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     var name: String,
 
     @Column(nullable = false, name = "phone_number", length = 25)
     var phoneNumber: String,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "site_id", nullable = false)
     var site: Site,
 

@@ -56,8 +56,6 @@ class ReportService(
             writer.println(
                 csvRow(
                     v.id.toString(),
-                    v.name,
-                    v.phone,
                     v.visitorType,
                     v.purpose,
                     v.visitStatus.name,

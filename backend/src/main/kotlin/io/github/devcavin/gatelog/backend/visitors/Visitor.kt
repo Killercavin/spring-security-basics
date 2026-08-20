@@ -1,10 +1,9 @@
 package io.github.devcavin.gatelog.backend.visitors
 
-import io.github.devcavin.gatelog.backend.common.exception.InvalidStateException
 import io.github.devcavin.gatelog.backend.common.persistence.BaseEntity
 import io.github.devcavin.gatelog.backend.sites.Site
-import io.github.devcavin.gatelog.backend.zones.Zone
 import io.github.devcavin.gatelog.backend.users.User
+import io.github.devcavin.gatelog.backend.zones.Zone
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -20,23 +19,16 @@ import java.util.UUID
 @Entity
 @Table(name = "visitors")
 class Visitor(
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(updatable = false, nullable = false)
     override var id: UUID? = null,
 
-    @Column(nullable = false, length = 100)
-    var name: String,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "visitor_profile_id", nullable = false)
+    var visitorProfile: VisitorProfile,
 
-    @Column(nullable = false, length = 25)
-    var phone: String,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "visitor_profile_id")
-    var visitorProfile: VisitorProfile? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "site_id", nullable = false)
     var site: Site,
 
@@ -44,11 +36,11 @@ class Visitor(
     @JoinColumn(name = "zone_id")
     var zone: Zone? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
     var createdBy: User,
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "visit_status_id", nullable = false)
     var visitStatus: VisitStatus,
 
@@ -63,15 +55,4 @@ class Visitor(
 
     @Column(name = "check_out_time")
     var checkOutTime: OffsetDateTime? = null
-) : BaseEntity() {
-    fun checkOut(now: OffsetDateTime = OffsetDateTime.now()) {
-        if (visitStatus != VisitStatus.CHECKED_IN) {
-            throw InvalidStateException(
-                "Visitor is not currently checked in"
-            )
-        }
-
-        visitStatus = VisitStatus.CHECKED_OUT
-        checkOutTime = now
-    }
-}
+) : BaseEntity()
