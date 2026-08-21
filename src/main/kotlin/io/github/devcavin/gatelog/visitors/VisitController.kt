@@ -1,0 +1,124 @@
+package io.github.devcavin.gatelog.visitors
+
+import io.github.devcavin.gatelog.users.User
+import io.github.devcavin.gatelog.visitors.dto.RegisterVisitRequest
+import io.github.devcavin.gatelog.visitors.dto.ReturningVisitorResponse
+import io.github.devcavin.gatelog.visitors.dto.VisitResponse
+import io.github.devcavin.gatelog.visitors.dto.VisitSearchParams
+import jakarta.validation.Valid
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
+import java.time.OffsetDateTime
+import java.util.UUID
+
+@RestController
+@RequestMapping("/api/visits")
+class VisitController(
+    private val visitService: VisitService
+) {
+
+    @PostMapping
+    fun register(
+        @AuthenticationPrincipal requestedBy: User,
+        @Valid @RequestBody request: RegisterVisitRequest
+    ): ResponseEntity<VisitResponse> =
+        ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(
+                visitService.register(
+                    requestedBy,
+                    request
+                )
+            )
+
+    @GetMapping("/{visitId}")
+    fun getById(
+        @AuthenticationPrincipal requestedBy: User,
+        @PathVariable visitId: UUID
+    ): ResponseEntity<VisitResponse> =
+        ResponseEntity.ok(
+            visitService.getById(
+                requestedBy,
+                visitId
+            )
+        )
+
+    @PatchMapping("/{visitId}/checkout")
+    fun checkOut(
+        @AuthenticationPrincipal requestedBy: User,
+        @PathVariable visitId: UUID
+    ): ResponseEntity<VisitResponse> =
+        ResponseEntity.ok(
+            visitService.checkOut(
+                requestedBy,
+                visitId
+            )
+        )
+
+    @GetMapping
+    fun search(
+        @AuthenticationPrincipal requestedBy: User,
+        @RequestParam(required = false) name: String?,
+        @RequestParam(required = false) phone: String?,
+        @RequestParam(required = false) visitorType: String?,
+        @RequestParam(required = false) zoneId: UUID?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) from: OffsetDateTime?,
+        @RequestParam(required = false) to: OffsetDateTime?,
+        @PageableDefault(
+            size = 20,
+            sort = ["checkInTime"]
+        )
+        pageable: Pageable
+    ): ResponseEntity<Page<VisitResponse>> {
+
+        val params = VisitSearchParams(
+            name = name,
+            phone = phone,
+            visitorType = visitorType,
+            zoneId = zoneId,
+            status = status,
+            from = from,
+            to = to
+        )
+
+        return ResponseEntity.ok(
+            visitService.search(
+                requestedBy,
+                params,
+                pageable
+            )
+        )
+    }
+
+    @GetMapping("/returning")
+    fun findReturning(
+        @AuthenticationPrincipal requestedBy: User,
+        @RequestParam phone: String
+    ): ResponseEntity<ReturningVisitorResponse> {
+
+        val result =
+            visitService.findReturningVisitor(
+                requestedBy,
+                phone
+            )
+
+        return if (result != null) {
+            ResponseEntity.ok(result)
+        } else {
+            ResponseEntity.noContent().build()
+        }
+    }
+}
