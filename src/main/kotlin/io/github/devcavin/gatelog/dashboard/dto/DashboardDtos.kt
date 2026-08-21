@@ -1,0 +1,19 @@
+package io.github.devcavin.gatelog.dashboard.dto
+
+import io.github.devcavin.gatelog.visitors.dto.VisitResponse
+import java.time.OffsetDateTime
+
+data class DashboardSummary(
+    val currentlyOnPremises: Long,
+    val checkedInToday: Long,
+    val checkedOutToday: Long,
+    val overdueCount: Long,
+    val asOf: OffsetDateTime = OffsetDateTime.now()
+)
+
+data class DashboardFeed(
+    val summary: DashboardSummary,
+    val activeVisitors: List<VisitResponse>,
+    val overdueVisitors: List<VisitResponse>,
+    val recentlyCheckedOut: List<VisitResponse>
+)

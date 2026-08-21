@@ -121,8 +121,7 @@ All primary keys are UUID. Enums are replaced with lookup tables (`roles`, `visi
 
 ```
 gatelog/
-├── backend/
-│   ├── src/main/kotlin/io/github/devcavin/backend/
+│   ├── src/main/kotlin/io/github/devcavin/gatelog
 │   │   ├── common/exception/      # domain exception hierarchy
 │   │   ├── config/                # security, CORS config
 │   │   ├── domain/
@@ -141,7 +140,8 @@ gatelog/
 │   ├── Dockerfile                 # multi-stage build
 │   └── compose.yaml               # local Postgres via Docker
 ├── .github/workflows/
-│   └── ci.yml                     # test → build image → push to GHCR
+│   └── ci.yaml                     # test → build image → push to GHCR
+    └── render.yaml
 └── README.md
 ```
 
