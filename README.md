@@ -1,16 +1,13 @@
 <div align="center">
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue.svg)
 ![Kotlin](https://img.shields.io/badge/kotlin-2.2.1-purple.svg)
-![React](https://img.shields.io/badge/React-18.2.0-blue.svg)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.13-brightgreen.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)
 ![Supabase](https://img.shields.io/badge/Supabase-3.0.0-blue.svg)
 ![Render](https://img.shields.io/badge/Render-2023.2.0-blue.svg)
-![Backend CI](https://github.com/devcavin/gatelog/actions/workflows/backend-ci.yaml/badge.svg)
-![Frontend CI](https://github.com/devcavin/gatelog/actions/workflows/frontend-ci.yaml/badge.svg)
-![Deploy to Render](https://github.com/devcavin/gatelog/actions/workflows/deploy-render.yaml/badge.svg)
+![Backend CI](https://github.com/devcavin/gatelog/actions/workflows/ci.yaml/badge.svg)
+![Deploy to Render](https://github.com/devcavin/gatelog/actions/workflows/render.yaml/badge.svg)
 ![GitHub Repo Size](https://img.shields.io/github/repo-size/devcavin/gatelog?color=blue)
 ![Stars](https://img.shields.io/github/stars/devcavin/gatelog?color=yellow)
 
