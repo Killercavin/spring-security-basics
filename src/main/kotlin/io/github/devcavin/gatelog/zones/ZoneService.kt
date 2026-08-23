@@ -18,19 +18,27 @@ class ZoneService(
     private val siteRepository: SiteRepository,
     private val authorizationService: AuthorizationService
 ) {
+
     @Transactional
     fun create(
         requestedBy: User,
         siteId: UUID,
         request: ZoneRequest
     ): ZoneResponse {
-        authorizationService.assertCovers(requestedBy, siteId)
+        authorizationService.assertCovers(
+            requestedBy,
+            siteId
+        )
 
         val site = siteRepository.findById(siteId)
-            .orElseThrow { ResourceNotFoundException("Site", siteId) }
+            .orElseThrow {
+                ResourceNotFoundException("Site", siteId)
+            }
 
         if (zoneRepository.existsBySiteIdAndName(siteId, request.name)) {
-            throw ConflictException("Zone with this name already exists under this site")
+            throw ConflictException(
+                "Zone with this name already exists under this site"
+            )
         }
 
         val zone = Zone(
@@ -38,7 +46,9 @@ class ZoneService(
             site = site
         )
 
-        return zoneRepository.save(zone).toResponse()
+        return zoneRepository
+            .save(zone)
+            .toResponse()
     }
 
     @Transactional(readOnly = true)
@@ -46,13 +56,31 @@ class ZoneService(
         requestedBy: User,
         siteId: UUID
     ): List<ZoneResponse> {
-        authorizationService.assertCovers(requestedBy, siteId)
+        authorizationService.assertCovers(
+            requestedBy,
+            siteId
+        )
 
-        if (!siteRepository.existsById(siteId)) {
-            throw ResourceNotFoundException("Site", siteId)
-        }
+        return zoneRepository
+            .findAllBySiteId(siteId)
+            .map { it.toResponse() }
+    }
 
-        return zoneRepository.findAllBySiteId(siteId).map { it.toResponse() }
+    @Transactional(readOnly = true)
+    fun getById(
+        requestedBy: User,
+        siteId: UUID,
+        zoneId: UUID
+    ): ZoneResponse {
+        authorizationService.assertCovers(
+            requestedBy,
+            siteId
+        )
+
+        return findZone(
+            siteId,
+            zoneId
+        ).toResponse()
     }
 
     @Transactional
@@ -62,32 +90,62 @@ class ZoneService(
         zoneId: UUID,
         request: ZoneRequest
     ): ZoneResponse {
-        authorizationService.assertCovers(requestedBy, siteId)
+        authorizationService.assertCovers(
+            requestedBy,
+            siteId
+        )
 
-        val zone = zoneRepository.findById(zoneId).orElseThrow { ResourceNotFoundException("Zone", zoneId) }
+        val zone = findZone(
+            siteId,
+            zoneId
+        )
 
-        if (zone.site.id != siteId) throw ResourceNotFoundException("Zone", zoneId)
-
-        if (zone.name != request.name && zoneRepository.existsBySiteIdAndName(siteId, request.name)) {
-            throw ConflictException("Zone with this name already exists under this site")
+        if (
+            zone.name != request.name &&
+            zoneRepository.existsBySiteIdAndName(
+                siteId,
+                request.name
+            )
+        ) {
+            throw ConflictException(
+                "Zone with this name already exists under this site"
+            )
         }
 
         zone.name = request.name
-        return zoneRepository.save(zone).toResponse()
+
+        return zoneRepository
+            .save(zone)
+            .toResponse()
     }
 
     @Transactional
     fun delete(
         requestedBy: User,
         siteId: UUID,
-        zoneId: UUID) {
-        authorizationService.assertCovers(requestedBy, siteId)
+        zoneId: UUID
+    ) {
+        authorizationService.assertCovers(
+            requestedBy,
+            siteId
+        )
 
-        val zone = zoneRepository.findById(zoneId)
-            .orElseThrow { ResourceNotFoundException("Zone", zoneId) }
-
-        if (zone.site.id != siteId) throw ResourceNotFoundException("Zone", zoneId)
+        val zone = findZone(
+            siteId,
+            zoneId
+        )
 
         zoneRepository.delete(zone)
     }
+
+    private fun findZone(
+        siteId: UUID,
+        zoneId: UUID
+    ): Zone =
+        zoneRepository
+            .findByIdAndSiteId(zoneId, siteId)
+            ?: throw ResourceNotFoundException(
+                "Zone",
+                zoneId
+            )
 }

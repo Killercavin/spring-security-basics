@@ -5,7 +5,7 @@ import java.util.UUID
 /**
  * Represents the data visibility scope for an authenticated user.
  *
- * GLOBAL - user can access resources across all sites (SUPER_ADMIN)
+ * GLOBAL - user can access resources across all sites (ADMIN)
  *
  * SITE - user can only access resources belonging to their own site (MANAGER, STAFF)
  *
@@ -15,7 +15,7 @@ import java.util.UUID
  */
 
 sealed class AccessScope {
-    /** No site boundary - SUPER_ADMIN sees everything */
+    /** No site boundary - ADMIN sees everything */
     data object Global : AccessScope()
 
     /** Restricted to a single site - MANAGER and STAFF */
@@ -27,9 +27,15 @@ sealed class AccessScope {
         is Site -> this.siteId == siteId
     }
 
-    /** Returns the siteId if site-scoped, null if global */
-    val siteIdOrNull: UUID? get() = when (this) {
-        is Global -> null
-        is Site -> this.siteId
-    }
+    /**
+     * Returns the site boundary for this scope.
+     *
+     * Site scope returns its site ID.
+     * Global scope returns null because no site filter is required.
+     */
+    val siteIdOrNull: UUID?
+        get() = when (this) {
+            is Global -> null
+            is Site -> siteId
+        }
 }

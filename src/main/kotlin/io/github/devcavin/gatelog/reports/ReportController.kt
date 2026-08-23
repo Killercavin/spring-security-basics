@@ -21,7 +21,7 @@ import java.util.UUID
 @RequestMapping("/api/reports")
 class ReportController(private val reportService: ReportService) {
     @GetMapping("/visitors/csv")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun exportVisitorsCsv(
         @AuthenticationPrincipal requestedBy: User,
         @RequestParam(required = false) from: OffsetDateTime?,
