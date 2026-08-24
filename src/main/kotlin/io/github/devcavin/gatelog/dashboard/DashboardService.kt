@@ -1,112 +1,128 @@
 package io.github.devcavin.gatelog.dashboard
 
 import io.github.devcavin.gatelog.auth.AuthorizationService
+import io.github.devcavin.gatelog.common.exception.ResourceNotFoundException
+import io.github.devcavin.gatelog.common.time.TimeUtil
 import io.github.devcavin.gatelog.dashboard.dto.DashboardFeed
 import io.github.devcavin.gatelog.dashboard.dto.DashboardSummary
 import io.github.devcavin.gatelog.users.User
-import io.github.devcavin.gatelog.visitors.VisitStatusRepository
 import io.github.devcavin.gatelog.visitors.VisitRepository
+import io.github.devcavin.gatelog.visitors.VisitStatusRepository
 import io.github.devcavin.gatelog.visitors.dto.toResponse
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
-import java.util.UUID
 
 @Service
 class DashboardService(
     private val visitRepository: VisitRepository,
-    private val visitorStatusRepository: VisitStatusRepository,
-    private val authorizationService: AuthorizationService,
-    @Value($$"${gatelog.scheduler.overdue-threshold-hours:2}")
-    private val overdueThresholdHours: Long,
+    private val visitStatusRepository: VisitStatusRepository,
+    private val authorizationService: AuthorizationService
 ) {
+
     @Transactional(readOnly = true)
     fun getFeed(requestedBy: User): DashboardFeed {
+
         val scope = authorizationService.scopeFor(requestedBy)
-        val now = OffsetDateTime.now(ZoneOffset.UTC)
-        val startOfDay = now.toLocalDate().atStartOfDay().atOffset(ZoneOffset.UTC)
-        val endOfDay = startOfDay.plusDays(1)
-        val overdueThreshold = now.minusHours(overdueThresholdHours)
+        val siteId = scope.siteIdOrNull
 
-        val checkedInStatus  = visitorStatusRepository.findByName("CHECKED_IN")!!
-        val checkedOutStatus = visitorStatusRepository.findByName("CHECKED_OUT")!!
-        val overdueStatus    = visitorStatusRepository.findByName("OVERDUE")!!
+        val startOfToday = TimeUtil.startOfToday()
+        val endOfTheDay = TimeUtil.endOfToday()
 
-        // siteId is null for SUPER_ADMIN (Global scope)
-        // siteId is set for MANAGER and STAFF (Site scope)
-        val siteId: UUID? = scope.siteIdOrNull
+        val checkedInStatus =
+            visitStatusRepository.findByName("CHECKED_IN")
+                ?: throw ResourceNotFoundException(
+                    "Visit Status",
+                    "CHECKED_IN"
+                )
 
-        val currentlyOnPremises = if (siteId != null) {
-            visitRepository.countBySiteIdAndVisitStatus(siteId, checkedInStatus) + visitRepository.countBySiteIdAndVisitStatus(siteId, overdueStatus)
-        } else {
-            visitRepository.countByVisitStatus(checkedInStatus) + visitRepository.countByVisitStatus(overdueStatus)
-        }
+        val checkedOutStatus =
+            visitStatusRepository.findByName("CHECKED_OUT")
+                ?: throw ResourceNotFoundException(
+                    "Visit Status",
+                    "CHECKED_OUT"
+                )
 
-        val checkedInToday = if (siteId != null) {
-            visitRepository.findAllCheckedInToday(
-                siteId, startOfDay, endOfDay, PageRequest.of(0, 1)
-            ).totalElements
-        } else {
-            visitRepository.countCheckedInTodayGlobal(startOfDay, endOfDay)
-        }
+        val overdueStatus =
+            visitStatusRepository.findByName("OVERDUE")
+                ?: throw ResourceNotFoundException(
+                    "Visit Status",
+                    "OVERDUE"
+                )
 
-        val checkedOutToday = if (siteId != null) {
-            visitRepository.countBySiteIdAndVisitStatusAndCheckOutTimeBetween(siteId, checkedOutStatus, startOfDay, endOfDay)
-        } else {
-            visitRepository.countByVisitStatusAndCheckOutTimeBetween(checkedOutStatus, startOfDay, endOfDay)
-        }
+        val currentlyOnPremises =
+            visitRepository.countCurrentlyOnPremises(
+                siteId = siteId,
+                checkedInStatus = checkedInStatus,
+                overdueStatus = overdueStatus
+            )
 
-        val overdueCount = if (siteId != null) {
-            visitRepository.findAllBySiteIdAndVisitStatus(
-                siteId, overdueStatus, PageRequest.of(0, 1)
-            ).totalElements
-        } else {
-            visitRepository.countByVisitStatus(overdueStatus)
-        }
+        val checkedInToday =
+            visitRepository.countCheckedInToday(
+                siteId = siteId,
+                startOfDay = startOfToday,
+                endOfDay = endOfTheDay
+            )
 
-        val activeVisitors = if (siteId != null) {
-            visitRepository.findAllBySiteIdAndVisitStatus(
-                siteId, checkedInStatus,
-                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "checkInTime"))
+        val checkedOutToday =
+            visitRepository.countCheckedOutToday(
+                siteId = siteId,
+                checkedOutStatus = checkedOutStatus,
+                startOfDay = startOfToday,
+                endOfDay = endOfTheDay
+            )
+
+        val overdueCount =
+            visitRepository.countOverdue(
+                siteId = siteId,
+                overdueStatus = overdueStatus
+            )
+
+        val overnightCount =
+            visitRepository.countOvernight(
+                siteId = siteId,
+                startOfToday = startOfToday
+            )
+
+        val activeVisitors =
+            visitRepository.findActiveVisitors(
+                siteId = siteId,
+                checkedInStatus = checkedInStatus,
+                pageable = PageRequest.of(0, 10)
             ).content
-        } else {
-            visitRepository.findAllByVisitStatus(
-                checkedInStatus,
-                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "checkInTime"))
-            ).content
-        }
 
-        val overdueVisitors = if (siteId != null) {
-            visitRepository.findAllOverdue(siteId, overdueThreshold)
-        } else {
-            visitRepository.findAllOverdueGlobal(overdueThreshold)
-        }
+        val overdueVisitors =
+            visitRepository.findOverdueVisitors(
+                siteId = siteId,
+                overdueStatus = overdueStatus,
+                pageable = PageRequest.of(0, 10)
+            ).content
 
-        val recentlyCheckedOut = if (siteId != null) {
-            visitRepository.findAllBySiteIdAndVisitStatus(
-                siteId, checkedOutStatus,
-                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "checkOutTime"))
+        val overnightVisitors =
+            visitRepository.findOvernightVisitors(
+                siteId = siteId,
+                startOfToday = startOfToday,
+                pageable = PageRequest.of(0, 10)
             ).content
-        } else {
-            visitRepository.findAllByVisitStatus(
-                checkedOutStatus,
-                PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "checkOutTime"))
+
+        val recentlyCheckedOut =
+            visitRepository.findRecentlyCheckedOut(
+                siteId = siteId,
+                checkedOutStatus = checkedOutStatus,
+                pageable = PageRequest.of(0, 10)
             ).content
-        }
 
         return DashboardFeed(
             summary = DashboardSummary(
                 currentlyOnPremises = currentlyOnPremises,
-                checkedInToday      = checkedInToday,
-                checkedOutToday     = checkedOutToday,
-                overdueCount        = overdueCount
+                checkedInToday = checkedInToday,
+                checkedOutToday = checkedOutToday,
+                overdueCount = overdueCount,
+                overnightCount = overnightCount
             ),
-            activeVisitors     = activeVisitors.map { it.toResponse() },
-            overdueVisitors    = overdueVisitors.map { it.toResponse() },
+            activeVisitors = activeVisitors.map { it.toResponse() },
+            overdueVisitors = overdueVisitors.map { it.toResponse() },
+            overnightVisitors = overnightVisitors.map { it.toResponse() },
             recentlyCheckedOut = recentlyCheckedOut.map { it.toResponse() }
         )
     }

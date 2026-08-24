@@ -11,7 +11,7 @@ import io.github.devcavin.gatelog.users.dto.*
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.util.UUID
 
 @Service
 class UserService(
@@ -21,15 +21,38 @@ class UserService(
     private val authorizationService: AuthorizationService,
     private val passwordEncoder: PasswordEncoder
 ) {
+
     @Transactional
-    fun createUser(request: CreateUserRequest, requestedBy: User): UserResponse {
-        if (userRepository.existsByEmail(request.email)) throw ConflictException("User already exists")
+    fun createUser(
+        request: CreateUserRequest,
+        requestedBy: User
+    ): UserResponse {
 
-        val targetRole = roleRepository.findByName(request.roleName) ?: throw ResourceNotFoundException("Role", request.roleName)
+        if (userRepository.existsByEmail(request.email)) {
+            throw ConflictException("User already exists")
+        }
 
-        authorizationService.assertCanCreateUser(requestedBy, targetRole.name, request.siteId)
+        val targetRole = roleRepository
+            .findByName(request.roleName)
+            ?: throw ResourceNotFoundException(
+                "Role",
+                request.roleName
+            )
 
-        val site = siteRepository.findById(request.siteId).orElseThrow { ResourceNotFoundException("Site", request.siteId) }
+        authorizationService.assertCanCreateUser(
+            requestedBy = requestedBy,
+            targetRoleName = targetRole.name,
+            targetSiteId = request.siteId
+        )
+
+        val site = siteRepository
+            .findById(request.siteId)
+            .orElseThrow {
+                ResourceNotFoundException(
+                    "Site",
+                    request.siteId
+                )
+            }
 
         val user = User(
             name = request.name,
@@ -39,30 +62,41 @@ class UserService(
             site = site
         )
 
-        val savedUser = userRepository.save(user)
-        return savedUser.toResponse()
+        return userRepository
+            .save(user)
+            .toResponse()
     }
 
     @Transactional(readOnly = true)
-    fun getAll(requestedBy: User): List<UserResponse> {
-        return when (val scope = authorizationService.scopeFor(requestedBy)) {
-            is AccessScope.Global -> userRepository
-                .findAllWithRole()
-                .map { it.toResponse() }
+    fun getAll(
+        requestedBy: User
+    ): List<UserResponse> =
+        when (val scope = authorizationService.scopeFor(requestedBy)) {
 
-            is AccessScope.Site -> userRepository
-                .findAllBySiteIdWithRole(scope.siteId)
-                .filter { it.role.name == "STAFF" }
-                .map { it.toResponse() }
+            is AccessScope.Global ->
+                userRepository
+                    .findAllWithRole()
+                    .map { it.toResponse() }
+
+            is AccessScope.Site ->
+                userRepository
+                    .findAllBySiteIdWithRole(scope.siteId)
+                    .filter { it.role.name == "STAFF" }
+                    .map { it.toResponse() }
         }
-    }
 
     @Transactional(readOnly = true)
-    fun getById(requestedBy: User, userId: UUID): UserResponse {
-        val target = userRepository.findById(userId)
-            .orElseThrow { ResourceNotFoundException("User", userId) }
+    fun getById(
+        requestedBy: User,
+        userId: UUID
+    ): UserResponse {
 
-        authorizationService.assertCanViewUser(requestedBy, target)
+        val target = findById(userId)
+
+        authorizationService.assertCanViewUser(
+            requestedBy,
+            target
+        )
 
         return target.toResponse()
     }
@@ -73,51 +107,94 @@ class UserService(
         userId: UUID,
         request: UpdateUserRequest
     ): UserResponse {
-        val target = userRepository.findById(userId)
-            .orElseThrow { ResourceNotFoundException("User", userId) }
 
-        authorizationService.assertCanViewUser(requestedBy, target)
-        authorizationService.assertCanUpdateUser(requestedBy, target, request.roleName)
+        val target = findById(userId)
 
-        if (request.email != target.email && userRepository.existsByEmail(request.email)) {
-            throw ConflictException("Email already in use: ${request.email}")
+        authorizationService.assertCanViewUser(
+            requestedBy,
+            target
+        )
+
+        authorizationService.assertCanUpdateUser(
+            requestedBy = requestedBy,
+            target = target,
+            newRoleName = request.roleName
+        )
+
+        if (
+            request.email != target.email &&
+            userRepository.existsByEmail(request.email)
+        ) {
+            throw ConflictException(
+                "Email already in use: ${request.email}"
+            )
         }
 
-        val newRole = roleRepository.findByName(request.roleName)
-            ?: throw ResourceNotFoundException("Role", request.roleName)
+        val newRole = roleRepository
+            .findByName(request.roleName)
+            ?: throw ResourceNotFoundException(
+                "Role",
+                request.roleName
+            )
 
         target.name = request.name
         target.email = request.email
         target.role = newRole
 
-        return userRepository.save(target).toResponse()
+        return userRepository
+            .save(target)
+            .toResponse()
     }
 
     @Transactional
-    fun deactivate(requestedBy: User, userId: UUID): UserResponse {
+    fun deactivate(
+        requestedBy: User,
+        userId: UUID
+    ): UserResponse {
+
         if (requestedBy.id == userId) {
-            throw InvalidStateException("You cannot deactivate your own account")
+            throw InvalidStateException(
+                "You cannot deactivate your own account"
+            )
         }
-        val target = userRepository.findById(userId)
-            .orElseThrow { ResourceNotFoundException("User", userId) }
 
-        authorizationService.assertCanViewUser(requestedBy, target)
+        val target = findById(userId)
 
-        authorizationService.assertCanDeactivateUser(requestedBy, target)
+        authorizationService.assertCanViewUser(
+            requestedBy,
+            target
+        )
+
+        authorizationService.assertCanDeactivateUser(
+            requestedBy,
+            target
+        )
 
         target.isActive = false
-        return userRepository.save(target).toResponse()
+
+        return userRepository
+            .save(target)
+            .toResponse()
     }
 
     @Transactional
-    fun activate(requestedBy: User, userId: UUID): UserResponse {
-        val target = userRepository.findById(userId)
-            .orElseThrow { ResourceNotFoundException("User", userId) }
+    fun activate(
+        requestedBy: User,
+        userId: UUID
+    ): UserResponse {
 
-        authorizationService.assertCanViewUser(requestedBy, target)
+        val target = findById(userId)
+
+        authorizationService.assertCanViewUser(
+            requestedBy,
+            target
+        )
 
         target.isActive = true
-        return userRepository.save(target).toResponse()
+
+        return userRepository
+            .save(target)
+            .toResponse()
     }
 
     @Transactional
@@ -125,11 +202,37 @@ class UserService(
         requestedBy: User,
         request: ChangePasswordRequest
     ): UserResponse {
-        if (!passwordEncoder.matches(request.currentPassword, requestedBy.passwordHash)) {
+
+        if (
+            !passwordEncoder.matches(
+                request.currentPassword,
+                requestedBy.passwordHash
+            )
+        ) {
             throw InvalidCredentialsException()
         }
 
-        requestedBy.passwordHash = passwordEncoder.encode(request.newPassword)
-        return userRepository.save(requestedBy).toResponse()
+        requestedBy.passwordHash =
+            passwordEncoder.encode(request.newPassword)
+
+        return userRepository
+            .save(requestedBy)
+            .toResponse()
     }
+
+    /**
+     * Reusable user lookup.
+     *
+     * Persistence lookup and not-found handling live here.
+     * Authorization remains with the operation using the user.
+     */
+    private fun findById(userId: UUID): User =
+        userRepository
+            .findById(userId)
+            .orElseThrow {
+                ResourceNotFoundException(
+                    "User",
+                    userId
+                )
+            }
 }

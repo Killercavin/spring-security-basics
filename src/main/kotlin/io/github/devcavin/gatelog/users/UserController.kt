@@ -23,7 +23,7 @@ import java.util.UUID
 @RequestMapping("/api/users")
 class UserController(private val userService: UserService) {
     @PostMapping("/register")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun createUser(
         @AuthenticationPrincipal requestedBy: User,
         @Valid @RequestBody request: CreateUserRequest
@@ -36,14 +36,14 @@ class UserController(private val userService: UserService) {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun getAll(
         @AuthenticationPrincipal requestedBy: User
     ): ResponseEntity<List<UserResponse>> =
         ResponseEntity.ok(userService.getAll(requestedBy))
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun getById(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable id: UUID
@@ -51,7 +51,7 @@ class UserController(private val userService: UserService) {
         ResponseEntity.ok(userService.getById(requestedBy, id))
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun updateUser(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable id: UUID,
@@ -60,7 +60,7 @@ class UserController(private val userService: UserService) {
         ResponseEntity.ok(userService.updateUser(requestedBy, id, request))
 
     @PatchMapping("/{id}/deactivate")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun deactivate(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable id: UUID
@@ -68,7 +68,7 @@ class UserController(private val userService: UserService) {
         ResponseEntity.ok(userService.deactivate(requestedBy, id))
 
     @PatchMapping("/{id}/activate")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun activate(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable id: UUID

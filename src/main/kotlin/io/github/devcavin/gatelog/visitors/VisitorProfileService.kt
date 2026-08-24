@@ -9,7 +9,7 @@ import io.github.devcavin.gatelog.visitors.dto.VisitorProfileResponse
 import io.github.devcavin.gatelog.visitors.dto.toResponse
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.UUID
+import java.util.*
 
 @Service
 class VisitorProfileService(
@@ -18,34 +18,47 @@ class VisitorProfileService(
     private val authorizationService: AuthorizationService
 ) {
 
+    @Transactional(readOnly = true)
+    fun getById(
+        requestedBy: User,
+        profileId: UUID
+    ): VisitorProfileResponse {
+        val profile = findProfileById(profileId)
+
+        val profileSiteId = requireNotNull(profile.site.id)
+
+        authorizationService.assertCovers(
+            requestedBy,
+            profileSiteId
+        )
+
+        val visitCount = getVisitCount(
+            profileSiteId,
+            profileId
+        )
+
+        return profile.toResponse(visitCount)
+    }
+
     @Transactional
     fun update(
         requestedBy: User,
         profileId: UUID,
         request: UpdateVisitorProfileRequest
     ): VisitorProfileResponse {
+        val profile = findProfileById(profileId)
 
-        val profile = visitorProfileRepository.findById(profileId)
-            .orElseThrow {
-                ResourceNotFoundException(
-                    "VisitorProfile",
-                    profileId
-                )
-            }
-
-        val siteId = requireNotNull(profile.site.id) {
-            "Visitor profile has no site"
-        }
+        val profileSiteId = requireNotNull(profile.site.id)
 
         authorizationService.assertCovers(
             requestedBy,
-            siteId
+            profileSiteId
         )
 
         if (
             request.phoneNumber != profile.phoneNumber &&
             visitorProfileRepository.existsBySiteIdAndPhoneNumber(
-                siteId,
+                profileSiteId,
                 request.phoneNumber
             )
         ) {
@@ -59,12 +72,29 @@ class VisitorProfileService(
 
         val saved = visitorProfileRepository.save(profile)
 
-        val visitCount =
-            visitRepository.countBySiteIdAndVisitorProfileId(
-                siteId,
-                profileId
-            )
+        val visitCount = getVisitCount(
+            profileSiteId,
+            profileId
+        )
 
         return saved.toResponse(visitCount)
     }
+
+    private fun findProfileById(profileId: UUID): VisitorProfile =
+        visitorProfileRepository.findById(profileId)
+            .orElseThrow {
+                ResourceNotFoundException(
+                    "VisitorProfile",
+                    profileId
+                )
+            }
+
+    private fun getVisitCount(
+        siteId: UUID,
+        profileId: UUID
+    ): Long =
+        visitRepository.countBySiteIdAndVisitorProfileId(
+            siteId,
+            profileId
+        )
 }

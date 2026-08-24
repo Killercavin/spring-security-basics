@@ -25,7 +25,7 @@ class ZoneController(
 ) {
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun create(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable siteId: UUID,
@@ -34,8 +34,19 @@ class ZoneController(
         ResponseEntity.status(HttpStatus.CREATED)
             .body(zoneService.create(requestedBy, siteId, request))
 
+    @GetMapping("/{zoneId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
+    fun getById(
+        @AuthenticationPrincipal requestedBy: User,
+        @PathVariable siteId: UUID,
+        @PathVariable zoneId: UUID
+    ): ResponseEntity<ZoneResponse> =
+        ResponseEntity.ok(
+            zoneService.getById(requestedBy, siteId, zoneId)
+        )
+
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF')")
     fun getAllBySite(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable siteId: UUID
@@ -43,7 +54,7 @@ class ZoneController(
         ResponseEntity.ok(zoneService.getAllBySite(requestedBy, siteId))
 
     @PutMapping("/{zoneId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun update(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable siteId: UUID,
@@ -53,7 +64,7 @@ class ZoneController(
         ResponseEntity.ok(zoneService.update(requestedBy, siteId, zoneId, request))
 
     @DeleteMapping("/{zoneId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun delete(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable siteId: UUID,

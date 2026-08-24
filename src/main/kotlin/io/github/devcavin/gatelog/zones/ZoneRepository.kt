@@ -6,6 +6,7 @@ import java.util.UUID
 
 @Repository
 interface ZoneRepository : JpaRepository<Zone, UUID> {
+    fun findByIdAndSiteId(id: UUID, siteId: UUID): Zone?
     fun findAllBySiteId(siteId: UUID): List<Zone>
     fun existsBySiteIdAndName(siteId: UUID, name: String): Boolean
 }

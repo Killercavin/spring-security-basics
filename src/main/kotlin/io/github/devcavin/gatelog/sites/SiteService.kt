@@ -17,46 +17,93 @@ class SiteService(
     private val siteRepository: SiteRepository,
     private val authorizationService: AuthorizationService
 ) {
+
     @Transactional
     fun create(request: SiteRequest): SiteResponse {
-        if (siteRepository.existsByNameAndLocation(request.name, request.location)) {
-            throw ConflictException("Site with this name and location already exists")
+        if (
+            siteRepository.existsByNameAndLocation(
+                request.name,
+                request.location
+            )
+        ) {
+            throw ConflictException(
+                "Site with this name and location already exists"
+            )
         }
 
-        val site = siteRepository.save(request.toEntity())
-
-        return site.toResponse()
+        return siteRepository
+            .save(request.toEntity())
+            .toResponse()
     }
 
     @Transactional(readOnly = true)
-    fun getAll(): List<SiteResponse> = siteRepository.findAll().map { it.toResponse() }
+    fun getAll(): List<SiteResponse> =
+        siteRepository
+            .findAll()
+            .map { it.toResponse() }
 
     @Transactional(readOnly = true)
-    fun getById(requestBy: User, id: UUID): SiteResponse {
+    fun getById(
+        requestedBy: User,
+        siteId: UUID
+    ): SiteResponse {
+        authorizationService.assertCovers(
+            requestedBy,
+            siteId
+        )
 
-        // site access scope check
-        authorizationService.assertCovers(requestBy, id)
-
-        val site = siteRepository.findById(id)
-            .orElseThrow { ResourceNotFoundException("Site", id) }
-        return site.toResponse()
+        return findById(siteId)
+            .toResponse()
     }
 
     @Transactional
-    fun update(id: UUID, request: SiteRequest): SiteResponse {
-        val site = siteRepository.findById(id)
-        .orElseThrow { ResourceNotFoundException("Site", id) }
+    fun update(
+        id: UUID,
+        request: SiteRequest
+    ): SiteResponse {
+        val site = findById(id)
+
+        if (
+            site.name != request.name ||
+            site.location != request.location
+        ) {
+            if (
+                siteRepository.existsByNameAndLocation(
+                    request.name,
+                    request.location
+                )
+            ) {
+                throw ConflictException(
+                    "Site with this name and location already exists"
+                )
+            }
+        }
 
         site.name = request.name
         site.location = request.location
 
-        return siteRepository.save(site).toResponse()
+        return siteRepository
+            .save(site)
+            .toResponse()
     }
 
     @Transactional
     fun delete(id: UUID) {
-        if (!siteRepository.existsById(id)) throw ResourceNotFoundException("Site", id)
+        val site = findById(id)
 
-        return siteRepository.deleteById(id)
+        siteRepository.delete(site)
     }
+
+    /**
+     * Internal site lookup.
+     *
+     * Keeps repository lookup and not-found handling in one place.
+     * Authorization is intentionally handled by the public operation
+     * that requires it.
+     */
+    private fun findById(id: UUID): Site =
+        siteRepository.findById(id)
+            .orElseThrow {
+                ResourceNotFoundException("Site", id)
+            }
 }

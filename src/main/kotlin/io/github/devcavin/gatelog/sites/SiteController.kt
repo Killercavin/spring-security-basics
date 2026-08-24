@@ -18,19 +18,19 @@ class SiteController(
 ) {
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun create(
         @Valid @RequestBody request: SiteRequest
     ): ResponseEntity<SiteResponse> =
         ResponseEntity.status(HttpStatus.CREATED).body(siteService.create(request))
 
     @GetMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getAll(): ResponseEntity<List<SiteResponse>> =
         ResponseEntity.ok(siteService.getAll())
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     fun getById(
         @AuthenticationPrincipal requestedBy: User,
         @PathVariable id: UUID
@@ -38,7 +38,7 @@ class SiteController(
         ResponseEntity.ok(siteService.getById(requestedBy, id))
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun update(
         @PathVariable id: UUID,
         @Valid @RequestBody request: SiteRequest
@@ -46,7 +46,7 @@ class SiteController(
         ResponseEntity.ok(siteService.update(id, request))
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun delete(
         @PathVariable id: UUID
     ): ResponseEntity<Void> {

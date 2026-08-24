@@ -1,6 +1,7 @@
 package io.github.devcavin.gatelog.visitors
 
 import io.github.devcavin.gatelog.common.persistence.BaseEntity
+import io.github.devcavin.gatelog.common.time.TimeUtil
 import io.github.devcavin.gatelog.sites.Site
 import io.github.devcavin.gatelog.users.User
 import io.github.devcavin.gatelog.zones.Zone
@@ -51,7 +52,7 @@ class Visit(
     var purpose: String = "General Visit",
 
     @Column(name = "check_in_time", nullable = false, updatable = false)
-    var checkInTime: OffsetDateTime = OffsetDateTime.now(),
+    var checkInTime: OffsetDateTime = TimeUtil.timeNow(),
 
     @Column(name = "check_out_time")
     var checkOutTime: OffsetDateTime? = null

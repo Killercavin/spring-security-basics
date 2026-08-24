@@ -59,3 +59,6 @@ Create Visit
 
 ```
 
+## Visit Status
+- `OVERDUE` - A visitor who has not checked out and has exceeded the configured expected visit duration.
+
