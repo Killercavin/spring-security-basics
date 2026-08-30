@@ -1,6 +1,5 @@
 package io.github.devcavin.gatelog.dashboard.dto
 
-import io.github.devcavin.gatelog.common.time.TimeUtil
 import io.github.devcavin.gatelog.visitors.dto.VisitResponse
 import java.time.OffsetDateTime
 
@@ -10,7 +9,7 @@ data class DashboardSummary(
     val checkedOutToday: Long,
     val overdueCount: Long,
     val overnightCount: Long,
-    val asOf: OffsetDateTime = TimeUtil.timeNow()
+    val asOf: OffsetDateTime
 )
 
 data class DashboardFeed(

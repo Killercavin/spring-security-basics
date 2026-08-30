@@ -14,6 +14,7 @@ class OverdueVisitJob(
     private val visitRepository: VisitRepository,
     private val visitorStatusRepository: VisitStatusRepository,
     private val siteRepository: SiteRepository,
+    private val timeUtil: TimeUtil,
 
     @Value($$"${gatelog.scheduler.overdue-threshold-hours:2}")
     private val overdueThresholdHours: Long
@@ -35,7 +36,7 @@ class OverdueVisitJob(
                 )
 
         val threshold =
-            TimeUtil.timeNow().minusHours(overdueThresholdHours)
+            timeUtil.timeNow().minusHours(overdueThresholdHours)
 
         val sites = siteRepository.findAll()
 

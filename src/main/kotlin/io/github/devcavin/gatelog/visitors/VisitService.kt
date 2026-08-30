@@ -4,7 +4,7 @@ import io.github.devcavin.gatelog.auth.AuthorizationService
 import io.github.devcavin.gatelog.common.exception.ConflictException
 import io.github.devcavin.gatelog.common.exception.InvalidStateException
 import io.github.devcavin.gatelog.common.exception.ResourceNotFoundException
-import io.github.devcavin.gatelog.common.time.TimeProvider
+import io.github.devcavin.gatelog.common.time.TimeUtil
 import io.github.devcavin.gatelog.users.User
 import io.github.devcavin.gatelog.visitors.dto.*
 import io.github.devcavin.gatelog.zones.ZoneRepository
@@ -24,7 +24,8 @@ class VisitService(
     private val zoneRepository: ZoneRepository,
     private val visitorProfileRepository: VisitorProfileRepository,
     private val authorizationService: AuthorizationService,
-    private val timeProvider: TimeProvider
+    private val timeUtil: TimeUtil,
+    private val visitResponseMapper: VisitResponseMapper
 ) {
 
     @Transactional
@@ -88,23 +89,23 @@ class VisitService(
             visitStatus = checkedInStatus,
             visitorType = request.visitorType,
             purpose = request.purpose,
-            checkInTime = timeProvider.timeNow()
+            checkInTime = timeUtil.timeNow()
         )
 
-        return visitRepository
-            .save(visit)
-            .toResponse()
+        val saved = visitRepository.save(visit)
+
+        return visitResponseMapper.toResponse(saved)
     }
 
     @Transactional(readOnly = true)
     fun getById(
         requestedBy: User,
         visitId: UUID
-    ): VisitResponse =
-        findAccessibleVisit(
-            requestedBy,
-            visitId
-        ).toResponse()
+    ): VisitResponse {
+        val visit = findAccessibleVisit(requestedBy, visitId)
+
+        return visitResponseMapper.toResponse(visit)
+    }
 
     @Transactional(readOnly = true)
     fun search(
@@ -122,7 +123,7 @@ class VisitService(
                 ),
                 pageable
             )
-            .map { it.toResponse() }
+            .map(visitResponseMapper::toResponse)
     }
 
     @Transactional
@@ -153,11 +154,11 @@ class VisitService(
                 )
 
         visit.visitStatus = checkedOutStatus
-        visit.checkOutTime = timeProvider.timeNow()
+        visit.checkOutTime = timeUtil.timeNow()
 
-        return visitRepository
-            .save(visit)
-            .toResponse()
+        val checkedOut =  visitRepository.save(visit)
+
+        return visitResponseMapper.toResponse(checkedOut)
     }
 
     @Transactional(readOnly = true)
