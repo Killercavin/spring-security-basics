@@ -17,7 +17,8 @@ import java.time.format.DateTimeFormatter
 @Service
 class ReportService(
     private val visitRepository: VisitRepository,
-    private val authorizationService: AuthorizationService
+    private val authorizationService: AuthorizationService,
+    private val timeUtil: TimeUtil
 ) {
 
     private val formatter = DateTimeFormatter.ofPattern(
@@ -82,7 +83,7 @@ class ReportService(
                             ?.let(formatter::format)
                             ?: "",
                         durationMinutes(visit),
-                        TimeUtil.isOvernight(visit.checkInTime).toString()
+                        timeUtil.isOvernight(visit.checkInTime).toString()
                     )
                 )
             }

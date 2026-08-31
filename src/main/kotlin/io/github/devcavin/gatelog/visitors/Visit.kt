@@ -52,7 +52,7 @@ class Visit(
     var purpose: String = "General Visit",
 
     @Column(name = "check_in_time", nullable = false, updatable = false)
-    var checkInTime: OffsetDateTime = TimeUtil.timeNow(),
+    var checkInTime: OffsetDateTime,
 
     @Column(name = "check_out_time")
     var checkOutTime: OffsetDateTime? = null

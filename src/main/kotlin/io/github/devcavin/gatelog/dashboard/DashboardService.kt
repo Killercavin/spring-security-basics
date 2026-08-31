@@ -7,8 +7,8 @@ import io.github.devcavin.gatelog.dashboard.dto.DashboardFeed
 import io.github.devcavin.gatelog.dashboard.dto.DashboardSummary
 import io.github.devcavin.gatelog.users.User
 import io.github.devcavin.gatelog.visitors.VisitRepository
+import io.github.devcavin.gatelog.visitors.VisitResponseMapper
 import io.github.devcavin.gatelog.visitors.VisitStatusRepository
-import io.github.devcavin.gatelog.visitors.dto.toResponse
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional
 class DashboardService(
     private val visitRepository: VisitRepository,
     private val visitStatusRepository: VisitStatusRepository,
-    private val authorizationService: AuthorizationService
+    private val authorizationService: AuthorizationService,
+    private val timeUtil: TimeUtil,
+    private val visitResponseMapper: VisitResponseMapper
 ) {
 
     @Transactional(readOnly = true)
@@ -26,8 +28,8 @@ class DashboardService(
         val scope = authorizationService.scopeFor(requestedBy)
         val siteId = scope.siteIdOrNull
 
-        val startOfToday = TimeUtil.startOfToday()
-        val endOfTheDay = TimeUtil.endOfToday()
+        val startOfToday = timeUtil.startOfToday()
+        val endOfTheDay = timeUtil.endOfToday()
 
         val checkedInStatus =
             visitStatusRepository.findByName("CHECKED_IN")
@@ -118,12 +120,13 @@ class DashboardService(
                 checkedInToday = checkedInToday,
                 checkedOutToday = checkedOutToday,
                 overdueCount = overdueCount,
-                overnightCount = overnightCount
+                overnightCount = overnightCount,
+                asOf = timeUtil.timeNow()
             ),
-            activeVisitors = activeVisitors.map { it.toResponse() },
-            overdueVisitors = overdueVisitors.map { it.toResponse() },
-            overnightVisitors = overnightVisitors.map { it.toResponse() },
-            recentlyCheckedOut = recentlyCheckedOut.map { it.toResponse() }
+            activeVisitors = activeVisitors.map(visitResponseMapper::toResponse),
+            overdueVisitors = overdueVisitors.map(visitResponseMapper::toResponse),
+            overnightVisitors = overnightVisitors.map(visitResponseMapper::toResponse),
+            recentlyCheckedOut = recentlyCheckedOut.map(visitResponseMapper::toResponse),
         )
     }
 }

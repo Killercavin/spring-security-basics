@@ -1,10 +1,9 @@
 package io.github.devcavin.gatelog.visitors.dto
 
-import io.github.devcavin.gatelog.common.time.TimeUtil
 import io.github.devcavin.gatelog.visitors.Visit
 import io.github.devcavin.gatelog.visitors.VisitorProfile
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.*
 
 data class VisitorProfileSummary(
     val id: UUID,
@@ -51,31 +50,6 @@ data class VisitSummary(
     val checkInTime: OffsetDateTime?,
     val checkOutTime: OffsetDateTime?
 )
-
-fun Visit.toResponse(): VisitResponse {
-    val profile = visitorProfile
-
-    return VisitResponse(
-        id = requireNotNull(id),
-        profile = VisitorProfileSummary(
-            id = requireNotNull(profile.id),
-            name = profile.name,
-            phoneNumber = profile.phoneNumber
-        ),
-        visitorType = visitorType,
-        purpose = purpose,
-        status = visitStatus.name,
-        siteId = requireNotNull(site.id),
-        zoneId = zone?.id,
-        zoneName = zone?.name,
-        createdById = requireNotNull(createdBy.id),
-        createdByName = createdBy.name,
-        checkInTime = checkInTime,
-        checkOutTime = checkOutTime,
-        overnight = checkOutTime == null &&
-                TimeUtil.isOvernight(checkInTime)
-    )
-}
 
 fun VisitorProfile.toResponse(
     visitCount: Long

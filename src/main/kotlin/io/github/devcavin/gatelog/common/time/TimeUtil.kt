@@ -1,24 +1,20 @@
 package io.github.devcavin.gatelog.common.time
 
+import org.springframework.stereotype.Component
+import java.time.Clock
+import java.time.LocalDate
 import java.time.OffsetDateTime
-import java.time.ZoneOffset
 
-object TimeUtil {
+@Component
+class TimeUtil(private val clock: Clock) {
 
     fun timeNow(): OffsetDateTime =
-        OffsetDateTime.now(ZoneOffset.UTC)
+        OffsetDateTime.now(clock)
 
     fun startOfToday(): OffsetDateTime =
-        timeNow()
-            .toLocalDate()
-            .atStartOfDay()
-            .atOffset(ZoneOffset.UTC)
+        LocalDate.now(clock).atStartOfDay(clock.zone).toOffsetDateTime()
 
-    fun startOfTomorrow(): OffsetDateTime =
-        startOfToday().plusDays(1)
-
-    fun endOfToday(): OffsetDateTime =
-        startOfTomorrow()
+    fun endOfToday(): OffsetDateTime = startOfToday().plusDays(1)
 
     fun isOvernight(
         checkInTime: OffsetDateTime,

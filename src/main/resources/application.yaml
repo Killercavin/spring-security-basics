@@ -48,3 +48,5 @@ gatelog:
   scheduler:
     overdue-threshold-hours: 2
     overdue-job-rate-ms: 900000
+
+  timezone: ${GATELOG_TIMEZONE}
