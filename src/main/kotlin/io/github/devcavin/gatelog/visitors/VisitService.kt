@@ -5,6 +5,7 @@ import io.github.devcavin.gatelog.common.exception.ConflictException
 import io.github.devcavin.gatelog.common.exception.InvalidStateException
 import io.github.devcavin.gatelog.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.common.time.TimeUtil
+import io.github.devcavin.gatelog.sites.SiteRepository
 import io.github.devcavin.gatelog.users.User
 import io.github.devcavin.gatelog.visitors.dto.*
 import io.github.devcavin.gatelog.zones.ZoneRepository
@@ -16,6 +17,7 @@ import java.util.UUID
 
 private const val CHECKED_IN = "CHECKED_IN"
 private const val CHECKED_OUT = "CHECKED_OUT"
+private const val OVERDUE = "OVERDUE"
 
 @Service
 class VisitService(
@@ -25,7 +27,8 @@ class VisitService(
     private val visitorProfileRepository: VisitorProfileRepository,
     private val authorizationService: AuthorizationService,
     private val timeUtil: TimeUtil,
-    private val visitResponseMapper: VisitResponseMapper
+    private val visitResponseMapper: VisitResponseMapper,
+    private val siteRepository: SiteRepository
 ) {
 
     @Transactional
@@ -33,14 +36,14 @@ class VisitService(
         requestedBy: User,
         request: RegisterVisitRequest
     ): VisitResponse {
-        val site = requestedBy.site
-        val siteId = requireNotNull(site.id) {
-            "Authenticated user has no site"
-        }
+        authorizationService.assertCovers(requestedBy, request.siteId)
+
+        val targetSite = siteRepository.findById(request.siteId)
+            .orElseThrow { ResourceNotFoundException("Site", request.siteId) }
 
         val zone = zoneRepository.findByIdAndSiteId(
             request.zoneId,
-            siteId
+            targetSite.id!!
         ) ?: throw ResourceNotFoundException(
             "Zone",
             request.zoneId
@@ -48,13 +51,13 @@ class VisitService(
 
         val profile =
             visitorProfileRepository.findBySiteIdAndPhoneNumber(
-                siteId,
+                targetSite.id!!,
                 request.phone
             ) ?: visitorProfileRepository.save(
                 VisitorProfile(
                     name = request.name,
                     phoneNumber = request.phone,
-                    site = site
+                    site = targetSite
                 )
             )
 
@@ -68,10 +71,14 @@ class VisitService(
                 CHECKED_IN
             )
 
+        val overdueVisit = visitRepository.findFirstByVisitorProfileIdAndVisitStatusName(profileId, OVERDUE)
+
         if (checkedInVisit != null) {
-            throw ConflictException(
-                "Visitor is already checked in"
-            )
+            throw ConflictException("Visitor already has an active visit with status CHECKED_IN")
+        }
+
+        if (overdueVisit != null) {
+            throw ConflictException("Visitor already has an active visit with status OVERDUE")
         }
 
         val checkedInStatus =
@@ -83,7 +90,7 @@ class VisitService(
 
         val visit = Visit(
             visitorProfile = profile,
-            site = site,
+            site = targetSite,
             zone = zone,
             createdBy = requestedBy,
             visitStatus = checkedInStatus,

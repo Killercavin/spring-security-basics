@@ -20,6 +20,8 @@ data class RegisterVisitRequest(
 
     val purpose: String = "General visit",
 
+    val siteId: UUID,
+
     val zoneId: UUID
 )
 
