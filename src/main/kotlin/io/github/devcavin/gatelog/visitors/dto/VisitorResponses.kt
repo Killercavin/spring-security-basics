@@ -18,6 +18,7 @@ data class VisitResponse(
     val purpose: String,
     val status: String,
     val siteId: UUID,
+    val siteName: String,
     val zoneId: UUID?,
     val zoneName: String?,
     val createdById: UUID,
