@@ -143,7 +143,7 @@ class VisitService(
             visitId
         )
 
-        if (visit.visitStatus.name != CHECKED_IN) {
+        if (visit.visitStatus.name != CHECKED_IN && visit.visitStatus.name != OVERDUE) {
             throw InvalidStateException(
                 "Visitor is already ${
                     visit.visitStatus.name

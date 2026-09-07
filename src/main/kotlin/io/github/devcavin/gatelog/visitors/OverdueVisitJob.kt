@@ -32,7 +32,7 @@ class OverdueVisitJob(
             visitorStatusRepository.findByName("OVERDUE")
                 ?: throw ResourceNotFoundException(
                     "Visit Status",
-                    "OVERDUE"
+                    "OVERDUE".lowercase()
                 )
 
         val threshold =
@@ -47,8 +47,8 @@ class OverdueVisitJob(
             val siteId = requireNotNull(site.id)
 
             val flagged = visitRepository.markOverdue(
-                threshold = threshold,
-                overdueStatus = overdueStatus
+                threshold,
+                overdueStatus
             )
 
             if (flagged > 0) {
