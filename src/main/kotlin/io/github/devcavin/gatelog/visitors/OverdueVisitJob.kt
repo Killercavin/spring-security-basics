@@ -2,7 +2,6 @@ package io.github.devcavin.gatelog.visitors
 
 import io.github.devcavin.gatelog.common.exception.ResourceNotFoundException
 import io.github.devcavin.gatelog.common.time.TimeUtil
-import io.github.devcavin.gatelog.sites.SiteRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
@@ -13,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional
 class OverdueVisitJob(
     private val visitRepository: VisitRepository,
     private val visitorStatusRepository: VisitStatusRepository,
-    private val siteRepository: SiteRepository,
     private val timeUtil: TimeUtil,
 
     @Value($$"${gatelog.scheduler.overdue-threshold-hours:2}")
@@ -38,34 +36,15 @@ class OverdueVisitJob(
         val threshold =
             timeUtil.timeNow().minusHours(overdueThresholdHours)
 
-        val sites = siteRepository.findAll()
+        val flagged = visitRepository.markOverdue(
+            threshold,
+            overdueStatus
+        )
 
-        var totalFlagged = 0
-
-        sites.forEach { site ->
-
-            val siteId = requireNotNull(site.id)
-
-            val flagged = visitRepository.markOverdue(
-                threshold,
-                overdueStatus
-            )
-
-            if (flagged > 0) {
-                log.info(
-                    "Flagged {} overdue visitor(s) at site {}",
-                    flagged,
-                    siteId
-                )
-            }
-
-            totalFlagged += flagged
-        }
-
-        if (totalFlagged > 0) {
+        if (flagged > 0) {
             log.info(
                 "Overdue job complete - {} visitor(s) flagged",
-                totalFlagged
+                flagged
             )
         }
     }

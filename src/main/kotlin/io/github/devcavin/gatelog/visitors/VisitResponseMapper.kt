@@ -24,6 +24,7 @@ class VisitResponseMapper(
             purpose = visit.purpose,
             status = visit.visitStatus.name,
             siteId = requireNotNull(visit.site.id),
+            siteName = requireNotNull(visit.site.name),
             zoneId = visit.zone?.id,
             zoneName = visit.zone?.name,
             createdById = requireNotNull(visit.createdBy.id),
